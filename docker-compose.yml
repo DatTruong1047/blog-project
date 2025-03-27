@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  fastify-app:
+    build: .
+    ports:
+      - "8080:3000"
+    depends_on:
+      - postgres
+    env_file: .env
+    networks:
+      - app-networks
+  postgres:
+    image: postgres:15
+    restart: always
+    ports:
+      - "5433:5432"
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-networks
+networks:
+  app-networks:
+    driver: bridge
+
+volumes:
+  postgres_data:
