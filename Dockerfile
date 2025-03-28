@@ -1,12 +1,31 @@
-FROM node:20-alpine
+# Stage 1: Build Stage
+FROM node:20 AS builder
 
+# Thu muc lam viec
 WORKDIR /src
 
-COPY package.json package-lock.json ./
+# Copy file package
+COPY package*.json ./
 
-RUN npm install --force
+# Cai dat dependencies
+RUN npm install 
 
+# Copy source
 COPY . .
+
+# Stage 2: Runtime Stage
+FROM node:20-slim AS production
+
+# Thu muc lam viec
+WORKDIR /src
+
+# Copy file package
+COPY package*.json ./
+
+ENV NODE_ENV=production
+
+# Cai dac dependencies 
+RUN npm install --omit=dev
 
 EXPOSE 3000
 

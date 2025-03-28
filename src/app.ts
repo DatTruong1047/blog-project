@@ -1,9 +1,24 @@
+import swagger from '@fastify/swagger';
+import swagger_ui from '@fastify/swagger-ui';
 import Fastify from 'fastify';
 
+import * as config from './config';
+import registerRoutes from './routes';
+
+// Init app
 const app = Fastify({ logger: true });
 
-app.get('/', async () => {
-  return { message: 'Sucessful' };
+// Register Swagger
+app.register(swagger, config.swaggerConfig);
+app.register(swagger_ui, {
+  routePrefix: '/docs',
+  uiConfig: {
+    docExpansion: 'full',
+    deepLinking: false,
+  },
 });
+
+// Register Routes
+registerRoutes(app);
 
 export default app;

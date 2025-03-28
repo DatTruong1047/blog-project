@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   fastify-app:
-    build: .
+    # build: .
+    image: thanhdat1047/server:v1 
+    volumes:
+      - .:/src
     ports:
       - "8080:3000"
     depends_on:
