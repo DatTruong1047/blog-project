@@ -7,7 +7,7 @@ services:
     volumes:
       - .:/src
     ports:
-      - "8080:3000"
+      - "3000:3000"
     depends_on:
       - postgres
     env_file: .env

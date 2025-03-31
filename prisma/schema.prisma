@@ -13,71 +13,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-model Role {
-  id          String @id @default(uuid())
-  roleName    String @unique
-  description String?
-  users       User[]
-}
-
 model User {
-  id        String    @id @default(uuid())
-  username  String    @unique
-  email     String    @unique
-  password  String
-  roleId    String
-  role      Role      @relation(fields: [roleId], references: [id])
-  images    UserImage[]
-  posts     Post[]
-  comments  Comment[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id              String     @id @default(uuid())
+  firstname       String?
+  lastname        String?
+  email           String     @unique
+  password        String
+  dateOfBirth     DateTime?
+  sex             SexOptions @default(MALE)
+  address         String?
+  isAdmin         Boolean?   @default(false)
+  isVerifiedEmail Boolean    @default(false)
+  mediaId         String?    @unique
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  posts           Post[]
+  comments        Comment[]
+  media           Media?     @relation(fields: [mediaId], references: [id])
+  refreshTokens   Token[]
 }
 
-model UserImage {
-  id      String  @id @default(uuid())
-  userId  String
-  user    User    @relation(fields: [userId], references: [id])
-  imageId String
-  image   Image   @relation(fields: [imageId], references: [id])
-  isUsed  Boolean @default(false)
+model Token {
+  id                   Int      @id @default(autoincrement())
+  refresh_token        String   @unique
+  refresh_token_expiry DateTime
+  user_id              String   @unique
+  users                User     @relation(fields: [user_id], references: [id])
 }
 
-model Image {
-  id          String   @id @default(uuid())
+model Media {
+  id          String      @id @default(uuid())
   url         String
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  userImages  UserImage[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User?
+  PostMedia   PostMedia[]
+}
+
+model PostMedia {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Post {
-  id          String     @id @default(uuid())
-  title       String
-  status      PostStatus @default(PUBLIC)
-  postDetail  PostDetail @relation(fields: [postDetailId], references: [id])
-  postDetailId String @unique
-  authorId    String
-  author      User      @relation(fields: [authorId], references: [id])
-  categoryId  String
-  category    Category  @relation(fields: [categoryId], references: [id])
-  comments    Comment[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id         String      @id @default(uuid())
+  title      String
+  status     PostStatus  @default(PRIVATE)
+  content    String
+  authorId   String
+  author     User        @relation(fields: [authorId], references: [id])
+  categoryId String
+  category   Category    @relation(fields: [categoryId], references: [id])
+  comments   Comment[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  PostMedia  PostMedia[]
 }
 
 enum PostStatus {
   PUBLIC
   PRIVATE
+  DRAFT
 }
 
-model PostDetail {
-  id      String  @id @default(uuid())
-  content String
-  post    Post?
+enum SexOptions {
+  MALE
+  FEMALE
+  OTHER
 }
 
 model Category {
@@ -89,7 +97,6 @@ model Category {
 
 model Comment {
   id        String   @id @default(uuid())
-  title     String
   content   String
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
@@ -99,4 +106,3 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-

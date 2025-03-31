@@ -11,7 +11,7 @@ const app = Fastify({ logger: true });
 // Register Swagger
 app.register(swagger, config.swaggerConfig);
 app.register(swagger_ui, {
-  routePrefix: '/docs',
+  routePrefix: '/api/docs',
   uiConfig: {
     docExpansion: 'full',
     deepLinking: false,

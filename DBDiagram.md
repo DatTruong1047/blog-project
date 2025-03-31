@@ -1,29 +1,21 @@
-<!-- 
-erDiagram
-    ROLES {
+    erDiagram
+    USER {
         string id
-        string roleName
-        string description
-    }
-
-    USERS {
-        string id
-        string username
+        string firstname
+        string lastname
         string email
         string password
-        string roleId
+        date dateOfBirth
+        enum sex
+        string address
+        boolean isAdmin
+        boolean isVerifiedEmail
+        string mediaId
         date createdAt
         date updatedAt
     }
 
-    USERIMAGE {
-        string id
-        string userId
-        string imageId
-        boolean isUsed
-    }
-
-    IMAGES {
+    MEDIA {
         string id
         string url
         string description
@@ -31,32 +23,32 @@ erDiagram
         date updatedAt
     }
 
-    POSTS {
+    TOKEN {
+        int id
+        string refresh_token
+        date refresh_token_expiry
+        string user_id
+    }
+
+    POST {
         string id
         string title
         enum status
-        string postDetailId
+        string content
         string authorId
         string categoryId
         date createdAt
         date updatedAt
-        date deletedAt
     }
 
-    POSTDETAILS {
-        string id
-        string content
-    }
-
-    CATEGORIES {
+    CATEGORY {
         string id
         string name
         string slug
     }
 
-    COMMENTS {
+    COMMENT {
         string id
-        string title
         string content
         string postId
         string userId
@@ -65,13 +57,22 @@ erDiagram
         date updatedAt
     }
 
-    ROLES ||--o{ USERS : "has"
-    USERS ||--o{ USERIMAGE : "has"
-    USERS ||--o{ POSTS : "writes"
-    USERS ||--o{ COMMENTS : "writes"
-    USERIMAGE ||--|| IMAGES : "references"
-    POSTS ||--|| POSTDETAILS : "contains"
-    POSTS ||--o| CATEGORIES : "belongs to"
-    POSTS ||--o{ COMMENTS : "has" 
--->
-# Link: https://mermaid.live/edit#pako:eNqlVV2PojAU_Sukz2pg_AB5MyOZkIzjRp2XCS8desUm0Jq27Kwr_vdtBR0G2R3iwgP29tzb03tO6xHFnADyEYg5xYnAWcQs_ayWz8HaOpYD80glKEssSm5CgqfwgjO4mSAgY0H3inJWzp2i6sfrOlh1rJ5LEKytOmSYpjfRPZbyg4t2lmEtTLACKxagP2SmGvF8T-rxL7zDxewp6M49vA3TDCdfuLxzTQ4zi8pXCaSx5nm9rs0S6fcq3L37H8v1piMRRVVakwxYnukprHJ5qxiXag5Ki9nSKpyrHW_rYawZJlwc7pX0GieQwt82Ow82s_C545ZjzhSwZpnH2SZ4Wq7Crgq2Wl2medKsu1wsgpc75Whj3FAk_N7Nn66dxYr-hP90V3njFEW_z4_VBeFbEdphGaH6rVFDlEfxX6jSsgbxIaiCdtC1l-24chWDLYrLaTRIAVsQwOJPdLlahawbyMBNtzFlLWBe1G1isO-QcpZIS_EWdINwtXXUQ4mgBPlK5NBDGQh9P-ohOhskQmoH2lnIZBDY4jxVJuuk0_aYvXGeXTIFz5Md8rc4lXpUqlX9NVwg-lTy9YHF1xRgBMQjz5lC_vhcEflH9Av5fcdxB97ENq89tifu1Ouhg4kPpwPHdj3PHY7sh8nU80499PtMwxm49th5cF1HZ41G46Fz-gNjr_hK
+    POSTMEDIA {
+        string id
+        string postId
+        string mediaId
+        date createdAt
+        date updatedAt
+    }
+
+    USER ||--o{ POST : "writes"
+    USER ||--o{ COMMENT : "writes"
+    USER ||--o{ TOKEN : "has"
+    USER ||--|| MEDIA : "has"
+    POST ||--o{ COMMENT : "has"
+    POST ||--o{ POSTMEDIA : "has"
+    POST ||--|{ CATEGORY : "belongs to"
+    POSTMEDIA ||--|| MEDIA : "references"
+
+
+# Link: https://mermaid.live/edit#pako:eNqtVW2PmkAQ_itkP6sRVFC-2TvSmMazOa9N2piYPXaATWGX7C49rfrfu4ielMXGxvIB2JlnZp55gx0KOQHkI0tfIB4pjgXOVqw8flkGz9auei8vqQRlsUWJIYqokIrhDAxNiq8oIMM0NaQ5lvKNi1oEghUcb4voAxUquWiAFZklYWM4wYQIkPIif-U8BcwsKqcko6xN8RUEjSiQoJVWBoTiWZNVKEA_yFQ15EVO6vLD6hRxHjzOprcVtBAmCQIyFDRXlLM7ibwsPgVPdSKUqTYWAiJdyGSt-A9oxvxDt4ZNTsXWTEOCWJ8dv4f_vFi-3FYGRVUKzY4rrAppQEPOFDBlDkOhEi5mpu9QZxFzsb27rQ_Tl-Dj4vnbbSm1LoNMi7jpdTGfB0831ula8jmXqiX1si11cW0_QkV_wp0FKfv7D7N-heT_2bnjN2y_73b5rpo731qhN0EVyBUyIeeq_x1V7U-JSbAJ2O9Pm94AHMO3xLkCuVTxGmi_u8xeiXmFlLNYWorXoZUPg5jeXxDAwipD1EGxoAT5ShTQQRkI_R3UR3Ts4AqpBPTYotKQQISLVJVWB22WY_ad8-xsKXgRJ8iPcCr1qerK6adyhuiN5MstC99NgBEQD7xgCvmjoX30ifwd2iC_a7s9b-h6jut5g4ltD1yng7bIt_uDXt8dT-y-N_K8kT0eHjro15GH09NCx3HHw7Hbd5zJ6PAbSZAMFw

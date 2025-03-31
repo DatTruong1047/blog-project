@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "prettier:check": "prettier --check ./**/*.{ts,js,json,*rc}",
-    "format": "prettier --write \"./**/*.{ts,js,json,*rc}\" \"test/**/*.ts\"",
+    "format": "prettier --write \"./**/*.{ts,js,json,*rc}\"",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "prepare": "[ \"$NODE_ENV\" != \"production\" ] && husky install || exit 0",
     "precommit": "lint-staged",
