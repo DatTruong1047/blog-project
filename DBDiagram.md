@@ -50,8 +50,8 @@
     COMMENT {
         string id
         string content
-        string postId
-        string userId
+        string postId FK
+        string userId FK
         boolean isActive
         date createdAt
         date updatedAt

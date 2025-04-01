@@ -3,9 +3,9 @@
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 datasource db {
@@ -34,11 +34,12 @@ model User {
 }
 
 model Token {
-  id                   Int      @id @default(autoincrement())
-  refresh_token        String   @unique
-  refresh_token_expiry DateTime
-  user_id              String   @unique
-  users                User     @relation(fields: [user_id], references: [id])
+  id            Int      @id @default(autoincrement())
+  refresh_token String   @unique
+  expiresAt     DateTime
+  ipAddress     String?
+  user_id       String
+  users         User     @relation(fields: [user_id], references: [id])
 }
 
 model Media {
