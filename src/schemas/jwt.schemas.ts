@@ -17,6 +17,17 @@ export const refreshTokenSchema = z.object({
   userId: z.string(),
 });
 
+export const refreshTokenRequestSchema = z.object({
+  refreshToken: z.string(),
+});
+
+export const verifyTokenResponseSchema = z.object({
+  status: z.number(),
+  message: z.string(),
+});
+
 export type refreshToken = z.infer<typeof refreshTokenSchema>;
 export type tokenPayload = z.infer<typeof tokenPayloadSchema>;
 export type tokenOption = z.infer<typeof tokenOptionSchema>;
+export type refreshTokenRequest = z.infer<typeof refreshTokenRequestSchema>;
+export type verifyTokenResponse = z.infer<typeof verifyTokenResponseSchema>;

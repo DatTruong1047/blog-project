@@ -1,7 +1,13 @@
 import z from 'zod';
-import zodToJsonSchema from 'zod-to-json-schema';
 
 const sexOptionsEnum = z.enum(['MALE', 'FEMALE', 'OTHER']);
+
+const userQuerySchema = z.object({
+  searchText: z.string().optional(),
+  take: z.number().int().default(5),
+  skip: z.number().int().default(0),
+});
+
 const userCore = {
   email: z
     .string({
@@ -11,26 +17,7 @@ const userCore = {
     .email(),
 };
 
-const createUserSchema = z.object({
-  ...userCore,
-  password: z
-    .string({
-      required_error: 'Password is required',
-      invalid_type_error: 'Password must be a string',
-    })
-    .min(8, { message: 'Password must be at least 8 characters long' })
-    .max(16, { message: 'Password must be at most 16 characters long' })
-    .regex(/[a-z]/, { message: 'Password must be contain at least one lowercase letter' })
-    .regex(/[A-Z]/, { message: 'Password must be contain at least one uppercase letter' })
-    .regex(/[!@#$%^&*(),.?":{}|<>\[\]]/, { message: 'Password must contain at least one speacial character' }),
-});
-
-const createUserResponseSchema = z.object({
-  id: z.string().uuid(),
-  ...userCore,
-});
-
-const loginSchema = z.object({
+export const loginSchema = z.object({
   email: z
     .string({
       required_error: 'Email is required',
@@ -40,12 +27,12 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
-const loginResponseSchema = z.object({
+export const loginResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
 });
 
-const userProfileSchemaResponse = z.object({
+export const userProfileSchemaResponse = z.object({
   id: z.string().uuid().optional(),
   email: z
     .string({
@@ -79,18 +66,71 @@ const userProfileSchemaResponse = z.object({
   updatedAt: z.date().optional(),
 });
 
-const userQuerySchema = z.object({
-  searchText: z.string().optional(),
-  take: z.number().int().default(5),
-  skip: z.number().int().default(0),
+export const createUserSchema = z.object({
+  ...userCore,
+  password: z
+    .string({
+      required_error: 'Password is required',
+      invalid_type_error: 'Password must be a string',
+    })
+    .min(8, { message: 'Password must be at least 8 characters long' })
+    .max(16, { message: 'Password must be at most 16 characters long' })
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>\[\]]).*$/, {
+      message: 'Password must contain at least one lowercase letter, one uppercase letter, and one special character',
+    }),
+});
+
+export const createUserResponseSchema = z.object({
+  data: z.object({ id: z.string().uuid(), ...userCore }),
+  message: z.string(),
+});
+
+export const updateUserSchema = z.object({
+  firstname: z
+    .string({
+      required_error: 'First name is required',
+      invalid_type_error: 'First name must be a string',
+    })
+    .min(3, { message: 'First name must be at least 3 characters' })
+    .max(50, { message: 'First name must be at most 50 characters' })
+    .optional(),
+
+  lastname: z
+    .string({
+      required_error: 'Last name is required',
+      invalid_type_error: 'Last name must be a string',
+    })
+    .min(3, { message: 'Last name at least three characters long' })
+    .max(50, { message: 'First name must be at most 50 characters' })
+    .optional(),
+
+  password: z
+    .string({
+      required_error: 'Password is required',
+      invalid_type_error: 'Password must be a string',
+    })
+    .min(8, { message: 'Password must be at least 8 characters long' })
+    .max(16, { message: 'Password must be at most 16 characters long' })
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>\[\]]).*$/, {
+      message: 'Password must contain at least one lowercase letter, one uppercase letter, and one special character',
+    })
+    .optional(),
+
+  dateOfBirth: z
+    .date()
+    .optional()
+    .refine((date) => !date || date <= new Date(), {
+      message: 'Date of birth cannot be in the future',
+    }),
+
+  sex: sexOptionsEnum.optional(),
+  address: z.string().optional(),
+  isVerifiedEmail: z.boolean().optional(),
+  mediaId: z.string().optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type userQuery = z.infer<typeof userQuerySchema>;
-
-export const createUserSchemaJSON = zodToJsonSchema(createUserSchema, { $refStrategy: 'none' });
-export const createUserResponseSchemaJSON = zodToJsonSchema(createUserResponseSchema, { $refStrategy: 'none' });
-export const loginSchemaJSON = zodToJsonSchema(loginSchema, { $refStrategy: 'none' });
-export const loginResponseSchemaJSON = zodToJsonSchema(loginResponseSchema, { $refStrategy: 'none' });
-export const userProfileSchemaResponseJSON = zodToJsonSchema(userProfileSchemaResponse, { $refStrategy: 'none' });
+export type createUserResponse = z.infer<typeof createUserResponseSchema>;
+export type updateUser = z.infer<typeof updateUserSchema>;
