@@ -7,6 +7,7 @@ WORKDIR /src
 # Copy file package
 COPY package*.json ./
 
+RUN apt-get update -y && apt-get install -y openssl
 # Cai dat dependencies
 RUN npm install 
 
