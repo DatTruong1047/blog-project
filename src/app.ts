@@ -8,17 +8,21 @@ import { FastifySchemaValidationError } from 'fastify/types/schema';
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod';
 
 import * as config from './config';
-import { verifyAdmin, verifyRefreshToken, verifyToken } from './plugins/auth.plugin';
-import { checkEmailToken } from './plugins/email.plugin';
+import authPlugin from './plugins/auth.plugin';
+import emailPlugin from './plugins/email.plugin';
 import prismaPlugin from './plugins/prisma.plugin';
+import replyPlugin from './plugins/reply.plugin';
 import registerRoutes from './routes';
-import { ErrorResponse } from './schemas/response.schemas';
+import { Response } from './schemas/response.schemas';
 
 // Init app
 const app = Fastify({ logger: true });
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 app.withTypeProvider<ZodTypeProvider>();
+
+// Reply plugin
+app.register(replyPlugin);
 
 // CROS
 app.register(cors, {
@@ -45,10 +49,12 @@ app.register(fastifyJwt, {
 
 // Auth
 app.register(fastifyAuth);
-app.decorate('verifyToken', verifyToken);
-app.decorate('verifyAdmin', verifyAdmin);
-app.decorate('verifyRefreshToken', verifyRefreshToken);
-app.decorate('checkEmailToken', checkEmailToken);
+
+// Auth plugin
+app.register(authPlugin);
+
+// Email plugin
+app.register(emailPlugin);
 
 // Custom response of error's validation
 app.setErrorHandler((err, request, reply) => {
@@ -59,7 +65,7 @@ app.setErrorHandler((err, request, reply) => {
       return `${fieldName} ${error.message}`;
     });
 
-    const customErrorResponse: ErrorResponse = {
+    const customErrorResponse: Response = {
       code: config.ErrorCodes.VALIDATE_ERROR, // Hoặc một mã lỗi chung cho validation
       message: messages.join(', '), // Gộp các thông báo lỗi validation
     };

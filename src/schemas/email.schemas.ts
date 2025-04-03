@@ -1,22 +1,32 @@
 import z from 'zod';
 
-export const verifyEmailResultSchema = z.object({
+export const VerifyEmailResultSchema = z.object({
   success: z.boolean(),
   message: z.string(),
 });
 
-export const emailPayloadSchema = z.object({
+export const EmailTokenPayloadSchema = z.object({
   userEmail: z.string(),
 });
 
-export const verifyEmailQuery = z.object({
+export const ResendEmailRequestSchema = z.object({
+  email: z
+    .string({
+      required_error: 'Email is required',
+      invalid_type_error: 'Email must be a string',
+    })
+    .email(),
+});
+
+export const VerifyEmailQuery = z.object({
   token: z.string(),
 });
 
-export const verifyEmailResponseSchema = z.object({
+export const VerifyEmailResponseSchema = z.object({
   message: z.string(),
 });
 
-export type verifyEmailResult = z.infer<typeof verifyEmailResultSchema>;
-export type emailPayload = z.infer<typeof emailPayloadSchema>;
-export type verifyEmailResponse = z.infer<typeof verifyEmailResponseSchema>;
+export type VerifyEmailResult = z.infer<typeof VerifyEmailResultSchema>;
+export type EmailTokenPayload = z.infer<typeof EmailTokenPayloadSchema>;
+export type VerifyEmailResponse = z.infer<typeof VerifyEmailResponseSchema>;
+export type ResendEmailRequest = z.infer<typeof ResendEmailRequestSchema>;

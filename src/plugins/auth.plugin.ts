@@ -1,61 +1,70 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyRequest, FastifyReply, FastifyPluginAsync, FastifyInstance } from 'fastify';
+import fastifuPlugin from 'fastify-plugin';
 
 import * as config from '@app/config';
-import { refreshTokenRequest, tokenPayload } from '@app/schemas/jwt.schemas';
-import { ErrorResponse } from '@app/schemas/response.schemas';
+import { RefreshTokenRequest, TokenPayload } from '@app/schemas/jwt.schemas';
+import { Response } from '@app/schemas/response.schemas';
 
-export async function verifyToken(request: FastifyRequest, reply: FastifyReply) {
+async function verifyToken(request: FastifyRequest, reply: FastifyReply) {
   try {
     await request.jwtVerify();
   } catch (error) {
-    const errorResponse: ErrorResponse = {
-      message: 'Unauthorized',
+    const errorResponse: Response = {
+      message: `${error.message}`,
       code: config.ErrorCodes.UNAUTHORIZED,
     };
-    reply.status(401).send(errorResponse);
+    reply.Unauthorized(errorResponse);
   }
 }
 
-export async function verifyRefreshToken(request: FastifyRequest<{ Body: refreshTokenRequest }>, reply: FastifyReply) {
+async function verifyRefreshToken(request: FastifyRequest<{ Body: RefreshTokenRequest }>, reply: FastifyReply) {
   try {
     const { refreshToken } = request.body;
 
     if (!refreshToken) {
-      const errorResponse: ErrorResponse = {
+      const errorResponse: Response = {
         message: 'Refresh token is empty',
         code: config.ErrorCodes.REFRESH_TOKEN_IS_NULL,
       };
-      return reply.status(400).send(errorResponse);
+      return reply.BadRequest(errorResponse);
     }
 
     request.server.jwt.verify(refreshToken);
   } catch (error) {
-    const errorResponse: ErrorResponse = {
+    const errorResponse: Response = {
       message: 'Invalid refresh token',
       code: config.ErrorCodes.INVALID_REFRESH_TOKEN,
     };
 
-    return reply.code(400).send(errorResponse);
+    return reply.BadRequest(errorResponse);
   }
 }
 
-export async function verifyAdmin(request: FastifyRequest, reply: FastifyReply) {
+async function verifyAdmin(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const payload: tokenPayload = await request.jwtDecode();
+    const payload: TokenPayload = await request.jwtDecode();
     if (payload && payload.isAdmin === true) {
       return;
     } else {
-      const errorResponse: ErrorResponse = {
+      const errorResponse: Response = {
         message: 'You dont have permission',
         code: config.ErrorCodes.DONT_HAVE_PERMISSION,
       };
-      reply.status(403).send(errorResponse);
+      reply.Forbidden(errorResponse);
     }
   } catch (error) {
-    const errorResponse: ErrorResponse = {
+    const errorResponse: Response = {
       message: 'Unauthorized',
       code: config.ErrorCodes.UNAUTHORIZED,
     };
-    reply.status(401).send(errorResponse);
+    reply.Unauthorized(errorResponse);
   }
 }
+
+const authPlugin: FastifyPluginAsync = async (app: FastifyInstance) => {
+  app.decorate('verifyToken', verifyToken);
+  app.decorate('verifyAdmin', verifyAdmin);
+  app.decorate('verifyRefreshToken', verifyRefreshToken);
+};
+
+export default fastifuPlugin(authPlugin);

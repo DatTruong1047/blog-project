@@ -1,8 +1,8 @@
 import z from 'zod';
 
-export const errorResponseSchema = z.object({
+export const ResponseSchema = z.object({
   code: z.number(),
   message: z.string(),
 });
 
-export type ErrorResponse = z.infer<typeof errorResponseSchema>;
+export type Response = z.infer<typeof ResponseSchema>;

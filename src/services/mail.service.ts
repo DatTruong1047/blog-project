@@ -1,89 +1,127 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRegister, FastifyRequest } from 'fastify';
 import nodemailer from 'nodemailer';
 
 import { emailConfig } from '@app/config/email.config';
-import { emailPayload } from '@app/schemas/email.schemas';
-import { tokenOption, verifyTokenResponse } from '@app/schemas/jwt.schemas';
-import { updateUser } from '@app/schemas/user.schemas';
+import { EmailTokenPayload } from '@app/schemas/email.schemas';
+import { TokenOption, VerifyTokenResponse } from '@app/schemas/jwt.schemas';
+import { UpdateUser } from '@app/schemas/user.schemas';
 import { generateToken } from '@app/utils/jwt.utils';
 
-import { getUserByEmailService, updateUserService } from './user.service';
+import UserService from './user.service';
 
-export function createTransporter() {
-  return nodemailer.createTransport({
-    host: emailConfig.host,
-    port: emailConfig.port,
-    secure: emailConfig.secure,
-    auth: emailConfig.auth,
-  });
-}
+export default class MailService {
+  private fastify: FastifyInstance;
+  private userService: UserService;
 
-export async function sendVerificationEmail(email: string, verificationToken: string): Promise<boolean> {
-  try {
-    const transporter = createTransporter();
-    const verificationLink = `${emailConfig.verificationUrl}?token=${verificationToken}`;
-
-    const mailOptions = {
-      from: emailConfig.fromEmail,
-      to: email,
-      subject: 'Xác thực tài khoản của bạn',
-      html: `
-            <h1>Xác thực tài khoản</h1>
-            <p>Cảm ơn bạn đã đăng ký! Vui lòng nhấp vào liên kết dưới đây để xác thực email của bạn:</p>
-            <a href="${verificationLink}">Xác thực tài khoản</a>
-            <p>Liên kết này sẽ hết hạn sau 24 giờ.</p>
-          `,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    return true;
-  } catch (error) {
-    console.error('Send mail error ', error);
-    throw new Error(error);
+  constructor(fastify: FastifyInstance) {
+    this.fastify = fastify;
+    this.userService = new UserService(fastify);
   }
-}
 
-export function generateVerifyEmailTokenService(payload: emailPayload, fastify: FastifyInstance, option: tokenOption) {
-  try {
-    return generateToken(payload, fastify, option);
-  } catch (error) {
-    throw new Error(error);
+  createTransporter() {
+    return nodemailer.createTransport({
+      ...emailConfig.options,
+    });
   }
-}
 
-export async function verifiedEmailService(fastify: FastifyInstance, token: string): Promise<verifyTokenResponse> {
-  try {
-    const decoded: emailPayload = fastify.jwt.verify(token);
-    const { userEmail } = decoded;
+  async sendVerificationEmail(email: string, verificationToken: string): Promise<boolean> {
+    try {
+      const transporter = this.createTransporter();
+      const verificationLink = `${emailConfig.verificationUrl}?token=${verificationToken}`;
 
-    const user = await getUserByEmailService(userEmail, fastify);
-    if (!user) {
-      const res: verifyTokenResponse = {
-        status: 404,
-        message: 'User is not found',
+      const mailOptions = {
+        from: emailConfig.fromEmail,
+        to: email,
+        subject: 'Xác thực tài khoản của bạn',
+        html: `
+              <h1>Xác thực tài khoản</h1>
+              <p>Cảm ơn bạn đã đăng ký! Vui lòng nhấp vào liên kết dưới đây để xác thực email của bạn:</p>
+              <a href="${verificationLink}">Xác thực tài khoản</a>
+              <p>Liên kết này sẽ hết hạn sau 24 giờ.</p>
+            `,
       };
+
+      await transporter.sendMail(mailOptions);
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async sendResetPasswordEmail(email: string, resetPasswordToken: string): Promise<boolean> {
+    try {
+      const transporter = this.createTransporter();
+      const resetPasswordLink = `${emailConfig.resetPasswordUrl}?token=${resetPasswordToken}`;
+
+      const mailOptions = {
+        from: emailConfig.fromEmail,
+        to: email,
+        subject: 'Quên mật khẩu',
+        html: `
+              <h1>Xác nhận quên mật khẩu</h1>
+              <p>Vui lòng nhấp vào liên kết dưới đây để  xác nhận thay đôỉ mật khẩu:</p>
+              <a href="${resetPasswordLink}">Xác nhận quên mật khẩu</a>
+              <p>Liên kết này sẽ hết hạn sau 2 giờ.</p>
+            `,
+      };
+
+      await transporter.sendMail(mailOptions);
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  generateEmailToken(payload: EmailTokenPayload, option: TokenOption) {
+    try {
+      return generateToken(payload, this.fastify, option);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async verifiedEmail(request: FastifyRequest): Promise<VerifyTokenResponse> {
+    try {
+      const { userEmail } = request.decodedEmailToken;
+
+      const user = await this.userService.getUserByEmail(userEmail);
+      if (!user) {
+        const res: VerifyTokenResponse = {
+          status: 404,
+          message: 'User is not found',
+        };
+        return res;
+      }
+
+      if (user.isVerifiedEmail) {
+        const res: VerifyTokenResponse = {
+          status: 200,
+          message: 'Email has already been verified',
+        };
+        return res;
+      }
+
+      const data: UpdateUser = {
+        isVerifiedEmail: true,
+      };
+
+      await this.userService.updateUser(user.id, data);
+
+      const res: VerifyTokenResponse = {
+        status: 200,
+        message: 'Verified successfull',
+      };
+
+      return res;
+    } catch (error) {
+      const res: VerifyTokenResponse = {
+        status: 400,
+        message: error.message,
+      };
+
       return res;
     }
-
-    const data: updateUser = {
-      isVerifiedEmail: true,
-    };
-
-    await updateUserService(fastify, user.id, data);
-
-    const res: verifyTokenResponse = {
-      status: 200,
-      message: 'Verified successfull',
-    };
-
-    return res;
-  } catch (error) {
-    const res: verifyTokenResponse = {
-      status: 400,
-      message: error.message,
-    };
-
-    return res;
   }
 }

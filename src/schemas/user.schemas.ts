@@ -1,14 +1,14 @@
 import z from 'zod';
 
-const sexOptionsEnum = z.enum(['MALE', 'FEMALE', 'OTHER']);
+const GenderOptionsEnum = z.enum(['MALE', 'FEMALE', 'OTHER']);
 
-const userQuerySchema = z.object({
+const UserQuerySchema = z.object({
   searchText: z.string().optional(),
   take: z.number().int().default(5),
   skip: z.number().int().default(0),
 });
 
-const userCore = {
+const UserCore = {
   email: z
     .string({
       required_error: 'Email is required',
@@ -17,7 +17,11 @@ const userCore = {
     .email(),
 };
 
-export const loginSchema = z.object({
+export const ChangePasswordRequestSchema = z.object({
+  ...UserCore,
+});
+
+export const LoginSchema = z.object({
   email: z
     .string({
       required_error: 'Email is required',
@@ -27,12 +31,12 @@ export const loginSchema = z.object({
   password: z.string(),
 });
 
-export const loginResponseSchema = z.object({
+export const LoginResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
 });
 
-export const userProfileSchemaResponse = z.object({
+export const UserProfileSchemaResponse = z.object({
   id: z.string().uuid().optional(),
   email: z
     .string({
@@ -54,20 +58,20 @@ export const userProfileSchemaResponse = z.object({
     })
     .min(3, 'Last name at least three characters long')
     .max(50, { message: 'First name must be at most 50 characters' }),
-  dateOfBirth: z
+  birthDay: z
     .date()
     .optional()
     .refine((date) => !date || date <= new Date(), {
       message: 'Date of birth cannot be in the future',
     }),
-  sex: sexOptionsEnum.default('MALE'),
+  gender: GenderOptionsEnum.default('MALE'),
   address: z.string().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
 
-export const createUserSchema = z.object({
-  ...userCore,
+export const CreateUserSchema = z.object({
+  ...UserCore,
   password: z
     .string({
       required_error: 'Password is required',
@@ -80,12 +84,12 @@ export const createUserSchema = z.object({
     }),
 });
 
-export const createUserResponseSchema = z.object({
-  data: z.object({ id: z.string().uuid(), ...userCore }),
-  message: z.string(),
+export const CreateUserResponseSchema = z.object({
+  id: z.string().uuid(),
+  ...UserCore,
 });
 
-export const updateUserSchema = z.object({
+export const UpdateUserSchema = z.object({
   firstname: z
     .string({
       required_error: 'First name is required',
@@ -116,21 +120,22 @@ export const updateUserSchema = z.object({
     })
     .optional(),
 
-  dateOfBirth: z
+  birthDay: z
     .date()
     .optional()
     .refine((date) => !date || date <= new Date(), {
       message: 'Date of birth cannot be in the future',
     }),
 
-  sex: sexOptionsEnum.optional(),
+  gender: GenderOptionsEnum.optional(),
   address: z.string().optional(),
   isVerifiedEmail: z.boolean().optional(),
   mediaId: z.string().optional(),
 });
 
-export type CreateUserInput = z.infer<typeof createUserSchema>;
-export type LoginInput = z.infer<typeof loginSchema>;
-export type userQuery = z.infer<typeof userQuerySchema>;
-export type createUserResponse = z.infer<typeof createUserResponseSchema>;
-export type updateUser = z.infer<typeof updateUserSchema>;
+export type CreateUserInput = z.infer<typeof CreateUserSchema>;
+export type LoginInput = z.infer<typeof LoginSchema>;
+export type UserQuery = z.infer<typeof UserQuerySchema>;
+export type CreateUserResponse = z.infer<typeof CreateUserResponseSchema>;
+export type UpdateUser = z.infer<typeof UpdateUserSchema>;
+export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;

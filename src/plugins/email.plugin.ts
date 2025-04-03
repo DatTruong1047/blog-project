@@ -1,16 +1,36 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyRequest, FastifyReply, FastifyPluginAsync } from 'fastify';
+import fastifuPlugin from 'fastify-plugin';
 
 import * as config from '@app/config';
-import { ErrorResponse } from '@app/schemas/response.schemas';
+import { EmailTokenPayload } from '@app/schemas/email.schemas';
+import { Response } from '@app/schemas/response.schemas';
 
-export async function checkEmailToken(request: FastifyRequest, reply: FastifyReply) {
-  const { token } = request.query as { token: string };
+export async function verifyEmailToken(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { token } = request.query as { token: string };
 
-  if (!token) {
-    const errorResponse: ErrorResponse = {
-      message: 'Token is not found',
-      code: config.ErrorCodes.EMAIL_TOKEN_NOT_FOUND,
+    if (!token) {
+      const errorResponse: Response = {
+        message: 'Token is not found',
+        code: config.ErrorCodes.EMAIL_TOKEN_NOT_FOUND,
+      };
+      return reply.NotFound(errorResponse);
+    }
+
+    const decoded: EmailTokenPayload = request.server.jwt.verify(token);
+    request.decodedEmailToken = decoded;
+  } catch (error) {
+    const errorResponse: Response = {
+      message: error.message,
+      code: config.ErrorCodes.INVALID_EMAIL_TOKEN,
     };
-    return reply.code(404).send(errorResponse);
+
+    return reply.BadRequest(errorResponse);
   }
 }
+
+const emailPlugin: FastifyPluginAsync = async (fastify) => {
+  fastify.decorate('verifyEmailToken', verifyEmailToken);
+};
+
+export default fastifuPlugin(emailPlugin);
