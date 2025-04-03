@@ -1,22 +1,22 @@
 -- CreateEnum
-CREATE TYPE "PostStatus" AS ENUM ('PUBLIC', 'PRIVATE');
+CREATE TYPE "PostStatus" AS ENUM ('PUBLIC', 'PRIVATE', 'DRAFT');
 
--- CreateTable
-CREATE TABLE "Role" (
-    "id" TEXT NOT NULL,
-    "roleName" TEXT NOT NULL,
-    "description" TEXT,
-
-    CONSTRAINT "Role_pkey" PRIMARY KEY ("id")
-);
+-- CreateEnum
+CREATE TYPE "SexOptions" AS ENUM ('MALE', 'FEMALE', 'OTHER');
 
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
-    "username" TEXT NOT NULL,
+    "firstname" TEXT,
+    "lastname" TEXT,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
-    "roleId" TEXT NOT NULL,
+    "dateOfBirth" TIMESTAMP(3),
+    "sex" "SexOptions" NOT NULL DEFAULT 'MALE',
+    "address" TEXT,
+    "isAdmin" BOOLEAN DEFAULT false,
+    "isVerifiedEmail" BOOLEAN NOT NULL DEFAULT false,
+    "mediaId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -24,47 +24,50 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "UserImage" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "imageId" TEXT NOT NULL,
-    "isUsed" BOOLEAN NOT NULL DEFAULT false,
+CREATE TABLE "Token" (
+    "id" SERIAL NOT NULL,
+    "refresh_token" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "ipAddress" TEXT,
+    "user_id" TEXT NOT NULL,
 
-    CONSTRAINT "UserImage_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Token_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "Image" (
+CREATE TABLE "Media" (
     "id" TEXT NOT NULL,
     "url" TEXT NOT NULL,
     "description" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "Image_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "Media_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PostMedia" (
+    "id" TEXT NOT NULL,
+    "postId" TEXT NOT NULL,
+    "mediaId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PostMedia_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Post" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
-    "status" "PostStatus" NOT NULL DEFAULT 'PUBLIC',
-    "postDetailId" TEXT NOT NULL,
+    "status" "PostStatus" NOT NULL DEFAULT 'PRIVATE',
+    "content" TEXT NOT NULL,
     "authorId" TEXT NOT NULL,
     "categoryId" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "deletedAt" TIMESTAMP(3),
 
     CONSTRAINT "Post_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "PostDetail" (
-    "id" TEXT NOT NULL,
-    "content" TEXT NOT NULL,
-
-    CONSTRAINT "PostDetail_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -79,7 +82,6 @@ CREATE TABLE "Category" (
 -- CreateTable
 CREATE TABLE "Comment" (
     "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "postId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -91,16 +93,13 @@ CREATE TABLE "Comment" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Role_roleName_key" ON "Role"("roleName");
-
--- CreateIndex
-CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
-
--- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Post_postDetailId_key" ON "Post"("postDetailId");
+CREATE UNIQUE INDEX "User_mediaId_key" ON "User"("mediaId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Token_refresh_token_key" ON "Token"("refresh_token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
@@ -109,16 +108,16 @@ CREATE UNIQUE INDEX "Category_name_key" ON "Category"("name");
 CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
 
 -- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "User" ADD CONSTRAINT "User_mediaId_fkey" FOREIGN KEY ("mediaId") REFERENCES "Media"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserImage" ADD CONSTRAINT "UserImage_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Token" ADD CONSTRAINT "Token_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "UserImage" ADD CONSTRAINT "UserImage_imageId_fkey" FOREIGN KEY ("imageId") REFERENCES "Image"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PostMedia" ADD CONSTRAINT "PostMedia_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Post" ADD CONSTRAINT "Post_postDetailId_fkey" FOREIGN KEY ("postDetailId") REFERENCES "PostDetail"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "PostMedia" ADD CONSTRAINT "PostMedia_mediaId_fkey" FOREIGN KEY ("mediaId") REFERENCES "Media"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Post" ADD CONSTRAINT "Post_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

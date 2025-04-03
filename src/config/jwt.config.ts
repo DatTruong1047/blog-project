@@ -1,9 +1,9 @@
-import { tokenOption } from '@app/schemas/jwt.schemas';
+import { TokenOption } from '@app/schemas/jwt.schemas';
 
-export const accessTokenOption: tokenOption = {
+export const accessTokenOption: TokenOption = {
   expiresIn: '2h',
 };
 
-export const refreshTokenOption: tokenOption = {
+export const refreshTokenOption: TokenOption = {
   expiresIn: '7d',
 };
