@@ -6,7 +6,7 @@ export default async function testRoute(fastify: FastifyInstance) {
     {
       schema: {
         tags: ['Test'],
-        summary: 'This API to test server with authentication',
+        summary: 'This API to test server',
         response: {
           200: {
             description: 'Successful',
@@ -17,7 +17,6 @@ export default async function testRoute(fastify: FastifyInstance) {
           },
         },
       },
-      onRequest: [fastify.verifyToken],
     },
     async () => {
       return { message: 'Successful' };

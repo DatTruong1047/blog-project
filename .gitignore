@@ -44,5 +44,4 @@ config/env/*.env.prod
 config/env/*.env.test
 .env
 
-# Migration 
 prisma/migrations

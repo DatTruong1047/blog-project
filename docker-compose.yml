@@ -1,8 +1,9 @@
 version: '3.8'
+
 services:
   fastify-app:
-    #build: .
-    image: thanhdat1047/server:v2
+    # build: .
+    image: thanhdat1047/server:v1 
     volumes:
       - .:/src
     ports:
