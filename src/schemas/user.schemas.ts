@@ -1,14 +1,8 @@
 import z from 'zod';
+import zodToJsonSchema from 'zod-to-json-schema';
 
-const GenderOptionsEnum = z.enum(['MALE', 'FEMALE', 'OTHER']);
-
-const UserQuerySchema = z.object({
-  searchText: z.string().optional(),
-  take: z.number().int().default(5),
-  skip: z.number().int().default(0),
-});
-
-const UserCore = {
+const sexOptionsEnum = z.enum(['MALE', 'FEMALE', 'OTHER']);
+const userCore = {
   email: z
     .string({
       required_error: 'Email is required',
@@ -17,11 +11,26 @@ const UserCore = {
     .email(),
 };
 
-export const ChangePasswordRequestSchema = z.object({
-  ...UserCore,
+const createUserSchema = z.object({
+  ...userCore,
+  password: z
+    .string({
+      required_error: 'Password is required',
+      invalid_type_error: 'Password must be a string',
+    })
+    .min(8, { message: 'Password must be at least 8 characters long' })
+    .max(16, { message: 'Password must be at most 16 characters long' })
+    .regex(/[a-z]/, { message: 'Password must be contain at least one lowercase letter' })
+    .regex(/[A-Z]/, { message: 'Password must be contain at least one uppercase letter' })
+    .regex(/[!@#$%^&*(),.?":{}|<>\[\]]/, { message: 'Password must contain at least one speacial character' }),
 });
 
-export const LoginSchema = z.object({
+const createUserResponseSchema = z.object({
+  id: z.string().uuid(),
+  ...userCore,
+});
+
+const loginSchema = z.object({
   email: z
     .string({
       required_error: 'Email is required',
@@ -31,12 +40,12 @@ export const LoginSchema = z.object({
   password: z.string(),
 });
 
-export const LoginResponseSchema = z.object({
+const loginResponseSchema = z.object({
   accessToken: z.string(),
   refreshToken: z.string(),
 });
 
-export const UserProfileSchemaResponse = z.object({
+const userProfileSchemaResponse = z.object({
   id: z.string().uuid().optional(),
   email: z
     .string({
@@ -58,84 +67,30 @@ export const UserProfileSchemaResponse = z.object({
     })
     .min(3, 'Last name at least three characters long')
     .max(50, { message: 'First name must be at most 50 characters' }),
-  birthDay: z
+  dateOfBirth: z
     .date()
     .optional()
     .refine((date) => !date || date <= new Date(), {
       message: 'Date of birth cannot be in the future',
     }),
-  gender: GenderOptionsEnum.default('MALE'),
+  sex: sexOptionsEnum.default('MALE'),
   address: z.string().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
 
-export const CreateUserSchema = z.object({
-  ...UserCore,
-  password: z
-    .string({
-      required_error: 'Password is required',
-      invalid_type_error: 'Password must be a string',
-    })
-    .min(8, { message: 'Password must be at least 8 characters long' })
-    .max(16, { message: 'Password must be at most 16 characters long' })
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>\[\]]).*$/, {
-      message: 'Password must contain at least one lowercase letter, one uppercase letter, and one special character',
-    }),
+const userQuerySchema = z.object({
+  searchText: z.string().optional(),
+  take: z.number().int().default(5),
+  skip: z.number().int().default(0),
 });
 
-export const CreateUserResponseSchema = z.object({
-  id: z.string().uuid(),
-  ...UserCore,
-});
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type userQuery = z.infer<typeof userQuerySchema>;
 
-export const UpdateUserSchema = z.object({
-  firstname: z
-    .string({
-      required_error: 'First name is required',
-      invalid_type_error: 'First name must be a string',
-    })
-    .min(3, { message: 'First name must be at least 3 characters' })
-    .max(50, { message: 'First name must be at most 50 characters' })
-    .optional(),
-
-  lastname: z
-    .string({
-      required_error: 'Last name is required',
-      invalid_type_error: 'Last name must be a string',
-    })
-    .min(3, { message: 'Last name at least three characters long' })
-    .max(50, { message: 'First name must be at most 50 characters' })
-    .optional(),
-
-  password: z
-    .string({
-      required_error: 'Password is required',
-      invalid_type_error: 'Password must be a string',
-    })
-    .min(8, { message: 'Password must be at least 8 characters long' })
-    .max(16, { message: 'Password must be at most 16 characters long' })
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*(),.?":{}|<>\[\]]).*$/, {
-      message: 'Password must contain at least one lowercase letter, one uppercase letter, and one special character',
-    })
-    .optional(),
-
-  birthDay: z
-    .date()
-    .optional()
-    .refine((date) => !date || date <= new Date(), {
-      message: 'Date of birth cannot be in the future',
-    }),
-
-  gender: GenderOptionsEnum.optional(),
-  address: z.string().optional(),
-  isVerifiedEmail: z.boolean().optional(),
-  mediaId: z.string().optional(),
-});
-
-export type CreateUserInput = z.infer<typeof CreateUserSchema>;
-export type LoginInput = z.infer<typeof LoginSchema>;
-export type UserQuery = z.infer<typeof UserQuerySchema>;
-export type CreateUserResponse = z.infer<typeof CreateUserResponseSchema>;
-export type UpdateUser = z.infer<typeof UpdateUserSchema>;
-export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;
+export const createUserSchemaJSON = zodToJsonSchema(createUserSchema, { $refStrategy: 'none' });
+export const createUserResponseSchemaJSON = zodToJsonSchema(createUserResponseSchema, { $refStrategy: 'none' });
+export const loginSchemaJSON = zodToJsonSchema(loginSchema, { $refStrategy: 'none' });
+export const loginResponseSchemaJSON = zodToJsonSchema(loginResponseSchema, { $refStrategy: 'none' });
+export const userProfileSchemaResponseJSON = zodToJsonSchema(userProfileSchemaResponse, { $refStrategy: 'none' });

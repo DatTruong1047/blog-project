@@ -1,5 +1,4 @@
 import { SwaggerOptions } from '@fastify/swagger';
-import { jsonSchemaTransform } from 'fastify-type-provider-zod';
 
 // Use for cookie
 export const swaggerConfigForCookie: SwaggerOptions = {
@@ -74,6 +73,4 @@ export const swaggerConfig: SwaggerOptions = {
       { name: 'Test', description: 'Endpoint to test api' },
     ],
   },
-  hideUntagged: true,
-  transform: jsonSchemaTransform,
 };
