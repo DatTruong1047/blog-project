@@ -1,10 +1,9 @@
-import { FastifyInstance } from 'fastify';
-
+import app from '@app/app';
 import { TokenOption, TokenPayload } from '@app/schemas/jwt.schemas';
 
-export function generateToken(payload: TokenPayload, fastify: FastifyInstance, options: TokenOption) {
+export function generateToken(payload: TokenPayload, options: TokenOption) {
   try {
-    const token = fastify.jwt.sign(payload, {
+    const token = app.jwt.sign(payload, {
       ...options,
     });
     return token;

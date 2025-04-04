@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 import { FastifyInstance, FastifyRegister, FastifyRequest } from 'fastify';
 import nodemailer from 'nodemailer';
 
@@ -10,12 +11,12 @@ import { generateToken } from '@app/utils/jwt.utils';
 import UserService from './user.service';
 
 export default class MailService {
-  private fastify: FastifyInstance;
-  private userService: UserService;
+  private readonly _prisma: PrismaClient;
+  private readonly _userService: UserService;
 
-  constructor(fastify: FastifyInstance) {
-    this.fastify = fastify;
-    this.userService = new UserService(fastify);
+  constructor() {
+    this._prisma = new PrismaClient();
+    this._userService = new UserService();
   }
 
   createTransporter() {
@@ -76,7 +77,7 @@ export default class MailService {
 
   generateEmailToken(payload: EmailTokenPayload, option: TokenOption) {
     try {
-      return generateToken(payload, this.fastify, option);
+      return generateToken(payload, option);
     } catch (error) {
       throw error;
     }
@@ -86,7 +87,7 @@ export default class MailService {
     try {
       const { userEmail } = request.decodedEmailToken;
 
-      const user = await this.userService.getUserByEmail(userEmail);
+      const user = await this._userService.getUserByEmail(userEmail);
       if (!user) {
         const res: VerifyTokenResponse = {
           status: 404,
@@ -107,7 +108,7 @@ export default class MailService {
         isVerifiedEmail: true,
       };
 
-      await this.userService.updateUser(user.id, data);
+      await this._userService.updateUser(user.id, data);
 
       const res: VerifyTokenResponse = {
         status: 200,

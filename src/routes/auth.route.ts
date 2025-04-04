@@ -1,9 +1,12 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 
 import AuthController from '@app/controllers/auth.controller';
 import { ResendEmailRequestSchema, VerifyEmailQuery, VerifyEmailResponseSchema } from '@app/schemas/email.schemas';
 import { RefreshTokenRequestSchema } from '@app/schemas/jwt.schemas';
 import { ResponseSchema } from '@app/schemas/response.schemas';
+import AuthService from '@app/services/auth.service';
+import Mailervice from '@app/services/mail.service';
+import UserService from '@app/services/user.service';
 
 import {
   CreateUserSchema,
@@ -14,7 +17,7 @@ import {
 } from '../schemas/user.schemas';
 
 async function authRoutes(app: FastifyInstance) {
-  const authController = new AuthController(app);
+  const authController = new AuthController(new UserService(), new Mailervice(), new AuthService());
 
   app.post('/signUp', {
     schema: {
@@ -25,7 +28,8 @@ async function authRoutes(app: FastifyInstance) {
         400: ResponseSchema,
       },
     },
-    handler: authController.registerHandler,
+    handler: authController.register,
+    //handler: (request, reply) => authController.register(request, reply),
   });
 
   app.post('/signIn', {
@@ -39,7 +43,7 @@ async function authRoutes(app: FastifyInstance) {
         404: ResponseSchema,
       },
     },
-    handler: authController.loginHandler,
+    handler: authController.login,
   });
 
   app.post('/refresh-token', {
@@ -54,7 +58,7 @@ async function authRoutes(app: FastifyInstance) {
       },
     },
     preHandler: [app.verifyRefreshToken],
-    handler: authController.refreshTokenHandler,
+    handler: authController.refreshToken,
   });
 
   app.get('/verify-email', {
@@ -68,7 +72,7 @@ async function authRoutes(app: FastifyInstance) {
       },
     },
     preHandler: [app.verifyEmailToken],
-    handler: authController.verifyEmailHanlder,
+    handler: authController.verifyEmail,
   });
 
   app.post('/resend-validation', {
@@ -80,7 +84,7 @@ async function authRoutes(app: FastifyInstance) {
         404: ResponseSchema,
       },
     },
-    handler: authController.resendVeridationHandler,
+    handler: authController.resendVerifyEmail,
   });
 
   app.post('/forgot-password', {
@@ -92,7 +96,7 @@ async function authRoutes(app: FastifyInstance) {
         404: ResponseSchema,
       },
     },
-    handler: authController.forgotPasswordHandler,
+    handler: authController.forgotPassword,
   });
 }
 
