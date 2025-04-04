@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest } from 'fastify';
+import { FastifyInstance } from 'fastify';
 
 import AuthController from '@app/controllers/auth.controller';
 import { ResendEmailRequestSchema, VerifyEmailQuery, VerifyEmailResponseSchema } from '@app/schemas/email.schemas';
