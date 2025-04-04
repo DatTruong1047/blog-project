@@ -19,12 +19,19 @@ export default class AuthController {
     this.userService = new UserService(fastify);
     this.emailService = new EmailService(fastify);
     this.authService = new AuthService(fastify);
+
+    this.registerHandler = this.registerHandler.bind(this);
+    this.loginHandler = this.loginHandler.bind(this);
+    this.refreshTokenHandler = this.refreshTokenHandler.bind(this);
+    this.verifyEmailHanlder = this.verifyEmailHanlder.bind(this);
+    this.resendVeridationHandler = this.resendVeridationHandler.bind(this);
+    this.forgotPasswordHandler = this.forgotPasswordHandler.bind(this);
   }
 
   async registerHandler(request: FastifyRequest<{ Body: CreateUserInput }>, reply: FastifyReply) {
     try {
       const existingUser = await this.userService.getUserByEmail(request.body.email);
-
+      console.log('Kết quả getUserByEmail:', existingUser);
       if (existingUser) {
         const errorResponse: Response = {
           message: 'User is already exist',
@@ -248,11 +255,11 @@ export default class AuthController {
         return reply.NotFound(errorResponse);
       }
 
-      // Create verified email token
+      // Create reset-password token
       const emailPayload: EmailTokenPayload = { userEmail: email };
       const resetPasswordToken = this.emailService.generateEmailToken(emailPayload, resetPasswordTokenOption);
 
-      // Send email to verified
+      // Send email to reset-password
       const emailSent = await this.emailService.sendResetPasswordEmail(email, resetPasswordToken);
 
       // Check sent email error

@@ -53,7 +53,6 @@ async function authRoutes(app: FastifyInstance) {
         404: ResponseSchema,
       },
     },
-    onRequest: [app.verifyToken],
     preHandler: [app.verifyRefreshToken],
     handler: authController.refreshTokenHandler,
   });
