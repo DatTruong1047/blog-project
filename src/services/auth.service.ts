@@ -1,16 +1,15 @@
-import { FastifyInstance } from 'fastify';
+import { PrismaClient } from '@prisma/client';
 
-// import { cookieOption } from '@app/schemas/cookie.schemas';
 import { accessTokenOption, refreshTokenOption } from '@app/config';
 import { RefreshToken, TokenPayload } from '@app/schemas/jwt.schemas';
 import { comparePassword } from '@app/utils/hash.utils';
 import { generateToken } from '@app/utils/jwt.utils';
 
 export default class AuthService {
-  private readonly fastify: FastifyInstance;
+  private readonly _prisma: PrismaClient;
 
-  constructor(fastify: FastifyInstance) {
-    this.fastify = fastify;
+  constructor() {
+    this._prisma = new PrismaClient();
   }
 
   async comparePassword(password: string, hashedPassword: string) {
@@ -28,8 +27,8 @@ export default class AuthService {
         userId: payload.userId,
       };
 
-      const accessToken = generateToken(accessTokenPayload, this.fastify, accessTokenOption);
-      const refreshToken = generateToken(refeshTokenPayload, this.fastify, refreshTokenOption);
+      const accessToken = generateToken(accessTokenPayload, accessTokenOption);
+      const refreshToken = generateToken(refeshTokenPayload, refreshTokenOption);
 
       return { accessToken, refreshToken };
     } catch (error) {
@@ -37,8 +36,32 @@ export default class AuthService {
     }
   }
 
+  async updateRefreshToken(oldRefreshToken: string, newRefreshToken: RefreshToken) {
+    const token = this._prisma.token.update({
+      where: { refresh_token: oldRefreshToken },
+      data: {
+        refresh_token: newRefreshToken.token,
+        expiresAt: newRefreshToken.expiresAt,
+        ipAddress: newRefreshToken.ipAddress,
+      },
+    });
+    return token;
+  }
+
+  async findToken(token: string) {
+    try {
+      const storedToken = await this._prisma.token.findUnique({
+        where: { refresh_token: token },
+        include: { users: true },
+      });
+      return storedToken;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async saveRefreshToken(refreshTokenData: RefreshToken) {
-    const token = this.fastify.prisma.token.create({
+    const token = this._prisma.token.create({
       data: {
         refresh_token: refreshTokenData.token,
         expiresAt: refreshTokenData.expiresAt,
@@ -50,20 +73,8 @@ export default class AuthService {
     return token;
   }
 
-  async updateRefreshToken(oldRefreshToken: string, newRefreshToken: RefreshToken) {
-    const token = this.fastify.prisma.token.update({
-      where: { refresh_token: oldRefreshToken },
-      data: {
-        refresh_token: newRefreshToken.token,
-        expiresAt: newRefreshToken.expiresAt,
-        ipAddress: newRefreshToken.ipAddress,
-      },
-    });
-    return token;
-  }
-
   async deleteRefreshToken(refreshToken: string) {
-    const token = this.fastify.prisma.token.delete({
+    const token = this._prisma.token.delete({
       where: { refresh_token: refreshToken },
     });
     return token;

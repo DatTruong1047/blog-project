@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyPluginAsync } from 'fastify';
 import fastifuPlugin from 'fastify-plugin';
 
+import app from '@app/app';
 import * as config from '@app/config';
 import { EmailTokenPayload } from '@app/schemas/email.schemas';
 import { Response } from '@app/schemas/response.schemas';
@@ -17,7 +18,7 @@ export async function verifyEmailToken(request: FastifyRequest, reply: FastifyRe
       return reply.NotFound(errorResponse);
     }
 
-    const decoded: EmailTokenPayload = request.server.jwt.verify(token);
+    const decoded: EmailTokenPayload = app.jwt.verify(token);
     request.decodedEmailToken = decoded;
   } catch (error) {
     const errorResponse: Response = {

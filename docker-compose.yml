@@ -1,6 +1,7 @@
 version: '3.8'
 services:
   fastify-app:
+    container_name: fastify-app
     #build: .
     image: thanhdat1047/server:v2
     volumes:

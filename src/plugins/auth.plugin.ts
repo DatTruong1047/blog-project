@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyPluginAsync, FastifyInstance } from 'fastify';
 import fastifuPlugin from 'fastify-plugin';
 
+import app from '@app/app';
 import * as config from '@app/config';
 import { RefreshTokenRequest, TokenPayload } from '@app/schemas/jwt.schemas';
 import { Response } from '@app/schemas/response.schemas';
@@ -29,7 +30,7 @@ async function verifyRefreshToken(request: FastifyRequest<{ Body: RefreshTokenRe
       return reply.BadRequest(errorResponse);
     }
 
-    request.server.jwt.verify(refreshToken);
+    app.jwt.verify(refreshToken);
   } catch (error) {
     const errorResponse: Response = {
       message: 'Invalid refresh token',

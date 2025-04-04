@@ -16,65 +16,13 @@ import registerRoutes from './routes';
 import { Response } from './schemas/response.schemas';
 
 // Init app
-const app = Fastify({ logger: true });
-app.setValidatorCompiler(validatorCompiler);
-app.setSerializerCompiler(serializerCompiler);
-app.withTypeProvider<ZodTypeProvider>();
+function app() {
+  const app = Fastify({ logger: true });
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+  app.withTypeProvider<ZodTypeProvider>();
 
-// Reply plugin
-app.register(replyPlugin);
+  return app;
+}
 
-// CROS
-app.register(cors, {
-  origin: ['*'],
-});
-
-// Prisma
-app.register(prismaPlugin);
-
-// Swagger
-app.register(swagger, config.swaggerConfig);
-app.register(swagger_ui, {
-  routePrefix: '/api/docs',
-  uiConfig: {
-    docExpansion: 'full',
-    deepLinking: false,
-  },
-});
-
-// JWT
-app.register(fastifyJwt, {
-  secret: config.SECRET_KEY,
-});
-
-// Auth
-app.register(fastifyAuth);
-
-// Auth plugin
-app.register(authPlugin);
-
-// Email plugin
-app.register(emailPlugin);
-
-// Custom response of error's validation
-app.setErrorHandler((err, request, reply) => {
-  if (err.code === 'FST_ERR_VALIDATION') {
-    const validationErrors = err.validation as FastifySchemaValidationError[];
-    const messages = validationErrors.map((error) => {
-      const fieldName = error.instancePath.substring(1).replace(/\//g, '.');
-      return `${fieldName} ${error.message}`;
-    });
-
-    const customErrorResponse: Response = {
-      code: config.ErrorCodes.VALIDATE_ERROR, // Hoặc một mã lỗi chung cho validation
-      message: messages.join(', '), // Gộp các thông báo lỗi validation
-    };
-
-    return reply.status(400).send(customErrorResponse);
-  }
-});
-
-// Register Routes
-registerRoutes(app);
-
-export default app;
+export default app();

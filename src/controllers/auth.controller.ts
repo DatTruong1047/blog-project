@@ -1,7 +1,8 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { FastifyReply, FastifyRequest } from 'fastify';
 
 import * as config from '@app/config';
 import { emailTokenOption, resetPasswordTokenOption } from '@app/config/email.config';
+import { binding } from '@app/decorator/binding.decorator';
 import { EmailTokenPayload, ResendEmailRequest, VerifyEmailResponse } from '@app/schemas/email.schemas';
 import { RefreshToken, RefreshTokenRequest, TokenPayload } from '@app/schemas/jwt.schemas';
 import { Response } from '@app/schemas/response.schemas';
@@ -11,20 +12,18 @@ import EmailService from '@app/services/mail.service';
 import UserService from '@app/services/user.service';
 
 export default class AuthController {
-  private readonly userService: UserService;
-  private readonly emailService: EmailService;
-  private readonly authService: AuthService;
+  constructor(
+    private readonly userService: UserService,
+    private readonly emailService: EmailService,
+    private readonly authService: AuthService
+  ) {}
 
-  constructor(fastify: FastifyInstance) {
-    this.userService = new UserService(fastify);
-    this.emailService = new EmailService(fastify);
-    this.authService = new AuthService(fastify);
-  }
-
-  async registerHandler(request: FastifyRequest<{ Body: CreateUserInput }>, reply: FastifyReply) {
+  @binding
+  async register(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const existingUser = await this.userService.getUserByEmail(request.body.email);
+      const body = request.body as CreateUserInput;
 
+      const existingUser = await this.userService.getUserByEmail(body.email);
       if (existingUser) {
         const errorResponse: Response = {
           message: 'User is already exist',
@@ -40,7 +39,7 @@ export default class AuthController {
       const emailPayload: EmailTokenPayload = { userEmail: user.email };
       const verificationEmailToken = this.emailService.generateEmailToken(emailPayload, emailTokenOption);
 
-      // Send email to verified
+      // Send email
       const emailSent = await this.emailService.sendVerificationEmail(user.email, verificationEmailToken);
 
       // Check sent email error
@@ -64,7 +63,8 @@ export default class AuthController {
     }
   }
 
-  async loginHandler(request: FastifyRequest<{ Body: LoginInput }>, reply: FastifyReply) {
+  @binding
+  async login(request: FastifyRequest<{ Body: LoginInput }>, reply: FastifyReply) {
     const body = request.body;
     const ipAddress = request.ip;
     try {
@@ -120,15 +120,13 @@ export default class AuthController {
     }
   }
 
-  async refreshTokenHandler(request: FastifyRequest<{ Body: RefreshTokenRequest }>, reply: FastifyReply) {
+  @binding
+  async refreshToken(request: FastifyRequest<{ Body: RefreshTokenRequest }>, reply: FastifyReply) {
     try {
       const currentRefreshToken = request.body.refreshToken;
 
       // Check is valid refresh token
-      const storedRefreshToken = await request.server.prisma.token.findUnique({
-        where: { refresh_token: currentRefreshToken },
-        include: { users: true },
-      });
+      const storedRefreshToken = await this.authService.findToken(currentRefreshToken);
 
       if (!storedRefreshToken) {
         const errorResponse: Response = {
@@ -165,7 +163,8 @@ export default class AuthController {
     }
   }
 
-  async verifyEmailHanlder(request: FastifyRequest, reply: FastifyReply) {
+  @binding
+  async verifyEmail(request: FastifyRequest, reply: FastifyReply) {
     try {
       // Verify email
       const result = await this.emailService.verifiedEmail(request);
@@ -195,7 +194,8 @@ export default class AuthController {
     }
   }
 
-  async resendVeridationHandler(request: FastifyRequest<{ Body: ResendEmailRequest }>, reply: FastifyReply) {
+  @binding
+  async resendVerifyEmail(request: FastifyRequest<{ Body: ResendEmailRequest }>, reply: FastifyReply) {
     try {
       const email = request.body.email;
 
@@ -235,7 +235,8 @@ export default class AuthController {
     } catch (error) {}
   }
 
-  async forgotPasswordHandler(request: FastifyRequest<{ Body: ChangePasswordRequest }>, reply: FastifyReply) {
+  @binding
+  async forgotPassword(request: FastifyRequest<{ Body: ChangePasswordRequest }>, reply: FastifyReply) {
     try {
       const email = request.body.email;
       // Find user by email
@@ -248,11 +249,11 @@ export default class AuthController {
         return reply.NotFound(errorResponse);
       }
 
-      // Create verified email token
+      // Create reset-password token
       const emailPayload: EmailTokenPayload = { userEmail: email };
       const resetPasswordToken = this.emailService.generateEmailToken(emailPayload, resetPasswordTokenOption);
 
-      // Send email to verified
+      // Send email to reset-password
       const emailSent = await this.emailService.sendResetPasswordEmail(email, resetPasswordToken);
 
       // Check sent email error

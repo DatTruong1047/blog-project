@@ -1,32 +1,32 @@
-import { FastifyInstance } from 'fastify';
+import { PrismaClient } from '@prisma/client';
 
 import { CreateUserInput, UpdateUser, UserQuery } from '@app/schemas/user.schemas';
 
 import { hashPassword } from '../utils/hash.utils';
 
 export default class UserService {
-  private readonly fastify: FastifyInstance;
+  private readonly _prisma: PrismaClient;
 
-  constructor(fastify: FastifyInstance) {
-    this.fastify = fastify;
+  constructor() {
+    this._prisma = new PrismaClient();
   }
 
   async getUserById(id: string) {
-    return this.fastify.prisma.user.findFirst({
+    return this._prisma.user.findFirst({
       where: { id },
     });
   }
 
   // Doing ... , not containt search.
   async getUsers(userQuery: UserQuery) {
-    return this.fastify.prisma.user.findMany({
+    return this._prisma.user.findMany({
       skip: userQuery.skip,
       take: userQuery.take,
     });
   }
 
   async getUserByEmail(email: string) {
-    return this.fastify.prisma.user.findUnique({
+    return this._prisma.user.findUnique({
       where: { email },
     });
   }
@@ -36,7 +36,7 @@ export default class UserService {
 
     const { hashedPassword } = await hashPassword(password);
 
-    const user = this.fastify.prisma.user.create({
+    const user = this._prisma.user.create({
       data: {
         email,
         password: hashedPassword,
@@ -54,7 +54,7 @@ export default class UserService {
       updateData.password = hashedPassword;
     }
 
-    return this.fastify.prisma.user.update({
+    return this._prisma.user.update({
       where: { id },
       data: updateData,
     });
