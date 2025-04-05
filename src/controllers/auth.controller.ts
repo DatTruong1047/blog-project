@@ -6,7 +6,7 @@ import { binding } from '@app/decorator/binding.decorator';
 import { EmailTokenPayload, ResendEmailRequest, VerifyEmailResponse } from '@app/schemas/email.schemas';
 import { RefreshToken, RefreshTokenRequest, TokenPayload } from '@app/schemas/jwt.schemas';
 import { Response } from '@app/schemas/response.schemas';
-import { ChangePasswordRequest, CreateUserInput, CreateUserResponse, LoginInput } from '@app/schemas/user.schemas';
+import { CreateUserInput, CreateUserResponse, ForgotPasswordRequest, LoginInput } from '@app/schemas/user.schemas';
 import AuthService from '@app/services/auth.service';
 import EmailService from '@app/services/mail.service';
 import UserService from '@app/services/user.service';
@@ -70,6 +70,8 @@ export default class AuthController {
     try {
       // Check existing user
       const user = await this.userService.getUserByEmail(body.email);
+      //console.log(user);
+
       if (!user) {
         const errorResponse: Response = {
           message: 'User not found',
@@ -236,7 +238,7 @@ export default class AuthController {
   }
 
   @binding
-  async forgotPassword(request: FastifyRequest<{ Body: ChangePasswordRequest }>, reply: FastifyReply) {
+  async forgotPassword(request: FastifyRequest<{ Body: ForgotPasswordRequest }>, reply: FastifyReply) {
     try {
       const email = request.body.email;
       // Find user by email

@@ -2,6 +2,7 @@ import { FastifyInstance, FastifyPluginAsync, FastifyReply } from 'fastify';
 import fastifyPlugin from 'fastify-plugin';
 
 import { Response } from '@app/schemas/response.schemas';
+import { UserProfileResponse } from '@app/schemas/user.schemas';
 
 const replyPlugin: FastifyPluginAsync = async (app: FastifyInstance) => {
   app.decorateReply('NotFound', function (this: FastifyReply, err: Response) {

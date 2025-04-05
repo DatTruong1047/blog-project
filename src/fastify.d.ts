@@ -33,5 +33,6 @@ declare module 'fastify' {
 declare module 'fastify' {
   interface FastifyRequest {
     decodedEmailToken: EmailPayload;
+    decodeAccessToken: TokenPayload;
   }
 }

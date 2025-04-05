@@ -1,11 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { FastifyInstance, FastifyRegister, FastifyRequest } from 'fastify';
+import { FastifyRequest } from 'fastify';
 import nodemailer from 'nodemailer';
 
 import { emailConfig } from '@app/config/email.config';
 import { EmailTokenPayload } from '@app/schemas/email.schemas';
 import { TokenOption, VerifyTokenResponse } from '@app/schemas/jwt.schemas';
-import { UpdateUser } from '@app/schemas/user.schemas';
 import { generateToken } from '@app/utils/jwt.utils';
 
 import UserService from './user.service';
@@ -104,11 +103,7 @@ export default class MailService {
         return res;
       }
 
-      const data: UpdateUser = {
-        isVerifiedEmail: true,
-      };
-
-      await this._userService.updateUser(user.id, data);
+      await this._userService.verfifyEmail(user.id);
 
       const res: VerifyTokenResponse = {
         status: 200,
