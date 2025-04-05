@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-import { CreateUserInput, UpdateUser, UserQuery } from '@app/schemas/user.schemas';
+import { ChangePasswordRequest, CreateUserInput, UpdateProfileRequest, UserQuery } from '@app/schemas/user.schemas';
 
 import { hashPassword } from '../utils/hash.utils';
 
@@ -45,18 +45,32 @@ export default class UserService {
     return user;
   }
 
-  async updateUser(id: string, input: UpdateUser) {
-    const { password, ...rest } = input;
-    const updateData: UpdateUser = { ...rest };
-
-    if (password) {
-      const { hashedPassword } = await hashPassword(password);
-      updateData.password = hashedPassword;
-    }
+  async verfifyEmail(id: string) {
+    return this._prisma.user.update({
+      where: { id },
+      data: {
+        isVerifiedEmail: true,
+      },
+    });
+  }
+  async updateProfile(id: string, input: UpdateProfileRequest) {
+    console.log(input, id);
 
     return this._prisma.user.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...input,
+      },
+    });
+  }
+
+  async updatePassword(id: string, password: string) {
+    const { hashedPassword } = await hashPassword(password);
+    return this._prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedPassword,
+      },
     });
   }
 }

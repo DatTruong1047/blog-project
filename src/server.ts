@@ -1,6 +1,7 @@
 import fastifyAuth from '@fastify/auth';
 import fastifyCors from '@fastify/cors';
 import fastifyJwt from '@fastify/jwt';
+import fastifyMultipar from '@fastify/multipart';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUI from '@fastify/swagger-ui';
 import { FastifySchemaValidationError } from 'fastify/types/schema';
@@ -24,6 +25,8 @@ const startServer = async () => {
     // CROS
     app.register(fastifyCors, {
       origin: ['*'],
+      methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     });
 
     // Swagger
@@ -43,6 +46,14 @@ const startServer = async () => {
 
     // Auth
     app.register(fastifyAuth);
+
+    // Multipart
+    app.register(fastifyMultipar, {
+      limits: {
+        fileSize: 1048576, // 1MB
+        files: 1,
+      },
+    });
 
     // Auth plugin
     app.register(authPlugin);

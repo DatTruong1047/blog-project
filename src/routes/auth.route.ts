@@ -13,7 +13,7 @@ import {
   CreateUserResponseSchema,
   LoginResponseSchema,
   LoginSchema,
-  ChangePasswordRequestSchema,
+  ForgotPasswordRequestSchema,
 } from '../schemas/user.schemas';
 
 async function authRoutes(app: FastifyInstance) {
@@ -90,7 +90,7 @@ async function authRoutes(app: FastifyInstance) {
   app.post('/forgot-password', {
     schema: {
       tags: ['Auth'],
-      body: ChangePasswordRequestSchema,
+      body: ForgotPasswordRequestSchema,
       response: {
         400: ResponseSchema,
         404: ResponseSchema,

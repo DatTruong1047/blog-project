@@ -8,13 +8,21 @@ import { Response } from '@app/schemas/response.schemas';
 
 async function verifyToken(request: FastifyRequest, reply: FastifyReply) {
   try {
-    await request.jwtVerify();
+    const decoded: TokenPayload = await request.jwtVerify();
+    if (!decoded) {
+      const errorResponse: Response = {
+        message: `Error`,
+        code: config.ErrorCodes.UNAUTHORIZED,
+      };
+      return reply.Unauthorized(errorResponse);
+    }
+    request.decodeAccessToken = decoded;
   } catch (error) {
     const errorResponse: Response = {
       message: `${error.message}`,
       code: config.ErrorCodes.UNAUTHORIZED,
     };
-    reply.Unauthorized(errorResponse);
+    return reply.Unauthorized(errorResponse);
   }
 }
 
