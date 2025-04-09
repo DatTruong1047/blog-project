@@ -1,20 +1,32 @@
+import { PrismaClient } from '@prisma/client';
 import { FastifyRequest, FastifyReply, FastifyPluginAsync, FastifyInstance } from 'fastify';
 import fastifuPlugin from 'fastify-plugin';
 
 import app from '@app/app';
 import * as config from '@app/config';
 import { RefreshTokenRequest, TokenPayload } from '@app/schemas/jwt.schemas';
-import { Response } from '@app/schemas/response.schemas';
+import { ErrorResponseType } from '@app/schemas/response.schemas';
 
 async function verifyToken(request: FastifyRequest, reply: FastifyReply) {
   try {
-    await request.jwtVerify();
+    const decoded: TokenPayload = await request.jwtVerify();
+
+    if (!decoded.userId) {
+      const errorResponse: ErrorResponseType = {
+        message: `Error`,
+        code: config.ErrorCodes.UNAUTHORIZED,
+      };
+
+      return reply.Unauthorized(errorResponse);
+    }
+
+    request.decodeAccessToken = decoded;
   } catch (error) {
-    const errorResponse: Response = {
+    const errorResponse: ErrorResponseType = {
       message: `${error.message}`,
       code: config.ErrorCodes.UNAUTHORIZED,
     };
-    reply.Unauthorized(errorResponse);
+    return reply.Unauthorized(errorResponse);
   }
 }
 
@@ -23,7 +35,7 @@ async function verifyRefreshToken(request: FastifyRequest<{ Body: RefreshTokenRe
     const { refreshToken } = request.body;
 
     if (!refreshToken) {
-      const errorResponse: Response = {
+      const errorResponse: ErrorResponseType = {
         message: 'Refresh token is empty',
         code: config.ErrorCodes.REFRESH_TOKEN_IS_NULL,
       };
@@ -32,7 +44,7 @@ async function verifyRefreshToken(request: FastifyRequest<{ Body: RefreshTokenRe
 
     app.jwt.verify(refreshToken);
   } catch (error) {
-    const errorResponse: Response = {
+    const errorResponse: ErrorResponseType = {
       message: 'Invalid refresh token',
       code: config.ErrorCodes.INVALID_REFRESH_TOKEN,
     };
@@ -47,14 +59,14 @@ async function verifyAdmin(request: FastifyRequest, reply: FastifyReply) {
     if (payload && payload.isAdmin === true) {
       return;
     } else {
-      const errorResponse: Response = {
+      const errorResponse: ErrorResponseType = {
         message: 'You dont have permission',
         code: config.ErrorCodes.DONT_HAVE_PERMISSION,
       };
       reply.Forbidden(errorResponse);
     }
   } catch (error) {
-    const errorResponse: Response = {
+    const errorResponse: ErrorResponseType = {
       message: 'Unauthorized',
       code: config.ErrorCodes.UNAUTHORIZED,
     };

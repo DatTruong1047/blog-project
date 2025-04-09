@@ -61,7 +61,24 @@ export default class AuthService {
   }
 
   async saveRefreshToken(refreshTokenData: RefreshToken) {
-    const token = this._prisma.token.create({
+    const existingToken = await this._prisma.token.findFirst({
+      where: {
+        user_id: refreshTokenData.userId,
+        ipAddress: refreshTokenData.ipAddress,
+      },
+    });
+    if (existingToken) {
+      const updatedToken = this._prisma.token.update({
+        where: { id: existingToken.id },
+        data: {
+          refresh_token: refreshTokenData.token,
+          expiresAt: refreshTokenData.expiresAt,
+        },
+      });
+
+      return updatedToken;
+    }
+    const newToken = this._prisma.token.create({
       data: {
         refresh_token: refreshTokenData.token,
         expiresAt: refreshTokenData.expiresAt,
@@ -70,7 +87,7 @@ export default class AuthService {
       },
     });
 
-    return token;
+    return newToken;
   }
 
   async deleteRefreshToken(refreshToken: string) {

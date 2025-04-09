@@ -1,6 +1,10 @@
+import path from 'path';
+
 import fastifyAuth from '@fastify/auth';
 import fastifyCors from '@fastify/cors';
 import fastifyJwt from '@fastify/jwt';
+import fastifyMultipar from '@fastify/multipart';
+import fastifyStatic from '@fastify/static';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUI from '@fastify/swagger-ui';
 import { FastifySchemaValidationError } from 'fastify/types/schema';
@@ -11,7 +15,7 @@ import authPlugin from './plugins/auth.plugin';
 import emailPlugin from './plugins/email.plugin';
 import replyPlugin from './plugins/reply.plugin';
 import registerRoutes from './routes';
-import { Response } from './schemas/response.schemas';
+import { ErrorResponseType } from './schemas/response.schemas';
 
 const PORT = config.PORT || 3000;
 //const server = app;
@@ -24,6 +28,8 @@ const startServer = async () => {
     // CROS
     app.register(fastifyCors, {
       origin: ['*'],
+      methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     });
 
     // Swagger
@@ -44,6 +50,17 @@ const startServer = async () => {
     // Auth
     app.register(fastifyAuth);
 
+    // Multipart
+    app.register(fastifyMultipar, {
+      limits: config.uploadFileConfig.limits,
+    });
+
+    // Static file
+    app.register(fastifyStatic, {
+      root: path.join(__dirname, '..', 'public', 'images'),
+      prefix: '/images/',
+    });
+
     // Auth plugin
     app.register(authPlugin);
 
@@ -59,7 +76,7 @@ const startServer = async () => {
           return `${fieldName} ${error.message}`;
         });
 
-        const customErrorResponse: Response = {
+        const customErrorResponse: ErrorResponseType = {
           code: config.ErrorCodes.VALIDATE_ERROR, // Hoặc một mã lỗi chung cho validation
           message: messages.join(', '), // Gộp các thông báo lỗi validation
         };

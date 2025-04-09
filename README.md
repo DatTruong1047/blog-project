@@ -1,3 +1,7 @@
+# Build docker file
+
+docker build -t thanhdat1047/server:v2 .
+
 # Run docker
 
 docker exec -it fastify-app npx prisma generate
