@@ -26,7 +26,7 @@ async function userRoutes(app: FastifyInstance) {
       },
     },
     onRequest: [app.verifyToken],
-    handler: userController.index,
+    handler: userController.show,
   });
 
   app.put('/me', {
@@ -42,7 +42,7 @@ async function userRoutes(app: FastifyInstance) {
     },
     preValidation: [parseBirthDay],
     onRequest: [app.verifyToken],
-    handler: userController.update,
+    handler: userController.edit,
   });
 
   app.put('/me/change-password', {

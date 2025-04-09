@@ -72,7 +72,9 @@ export default class MediaService {
           },
         });
       }
-    } catch (error) {}
+    } catch (error) {
+      throw error;
+    }
   }
 
   async uploadImage(request: FastifyRequest): Promise<UpLoadFileType> {
