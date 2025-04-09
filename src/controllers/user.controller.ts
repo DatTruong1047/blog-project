@@ -19,7 +19,7 @@ export default class UserController {
   constructor(private readonly userService: UserService, private readonly mediaService: MediaService) {}
 
   @binding
-  async index(request: FastifyRequest, reply: FastifyReply) {
+  async show(request: FastifyRequest, reply: FastifyReply) {
     try {
       // ID in token
       const userEmail = request.decodeAccessToken.userEmail;
@@ -57,7 +57,7 @@ export default class UserController {
   }
 
   @binding
-  async update(request: FastifyRequest<{ Body: UpdateProfileRequest }>, reply: FastifyReply) {
+  async edit(request: FastifyRequest<{ Body: UpdateProfileRequest }>, reply: FastifyReply) {
     try {
       // ID in token
       const userId = request.decodeAccessToken.userId;
@@ -72,11 +72,11 @@ export default class UserController {
         return reply.NotFound(errorResponse);
       }
 
-      this.userService.updateProfile(userId, request.body);
+      await this.userService.updateProfile(userId, request.body);
 
       const res: SuccessResWithoutDataType = {
         code: 200,
-        status: 'Scccess',
+        status: 'Success',
       };
 
       return reply.OK(res);
@@ -111,7 +111,7 @@ export default class UserController {
         return reply.NotFound(errorResponse);
       }
 
-      this.userService.updatePassword(userId, request.body.password);
+      await this.userService.updatePassword(userId, request.body.password);
 
       const res: SuccessResWithoutDataType = {
         code: 200,

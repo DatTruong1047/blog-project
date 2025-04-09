@@ -19,7 +19,7 @@ export const SuccessResWithoutDataSchema = z.object({
   status: z.string().optional().nullish(),
 });
 
-export const SuccessResponseSchema = <T extends z.ZodTypeAny>(dataSchema?: T | null) => {
+export const SuccessResponseSchema = <T extends z.ZodTypeAny>(dataSchema?: T | z.ZodArray<T>) => {
   return z.object({
     ...ResponseCore,
     status: z.string().optional().nullish(),
