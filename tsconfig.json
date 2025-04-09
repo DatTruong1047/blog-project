@@ -16,7 +16,10 @@
     "paths": {
       "@app": ["src"],
       "@app/*": ["src/*"],
-      "@test/*": ["test/*"]
+      "@test/*": ["test/*"],
+      "@upload": ["src/uploads"],
+      "@upload/*": ["src/uploads/*"],
+      "@config": ["src/config"]
     }
   },
   "include": ["src/**/*"]

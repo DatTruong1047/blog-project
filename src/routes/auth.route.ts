@@ -3,7 +3,7 @@ import { FastifyInstance } from 'fastify';
 import AuthController from '@app/controllers/auth.controller';
 import { ResendEmailRequestSchema, VerifyEmailQuery, VerifyEmailResponseSchema } from '@app/schemas/email.schemas';
 import { RefreshTokenRequestSchema } from '@app/schemas/jwt.schemas';
-import { ResponseSchema } from '@app/schemas/response.schemas';
+import { ErrorResponseSchema, SuccessResponseSchema, SuccessResWithoutDataSchema } from '@app/schemas/response.schemas';
 import AuthService from '@app/services/auth.service';
 import Mailervice from '@app/services/mail.service';
 import UserService from '@app/services/user.service';
@@ -14,6 +14,7 @@ import {
   LoginResponseSchema,
   LoginSchema,
   ForgotPasswordRequestSchema,
+  RefreshTokenResSchema,
 } from '../schemas/user.schemas';
 
 async function authRoutes(app: FastifyInstance) {
@@ -24,12 +25,11 @@ async function authRoutes(app: FastifyInstance) {
       tags: ['Auth'],
       body: CreateUserSchema,
       response: {
-        201: CreateUserResponseSchema,
-        400: ResponseSchema,
+        201: SuccessResponseSchema(CreateUserResponseSchema),
+        400: ErrorResponseSchema,
       },
     },
     handler: authController.register,
-    //handler: (request, reply) => authController.register(request, reply),
   });
 
   app.post('/signIn', {
@@ -37,10 +37,10 @@ async function authRoutes(app: FastifyInstance) {
       tags: ['Auth'],
       body: LoginSchema,
       response: {
-        200: LoginResponseSchema,
-        400: ResponseSchema,
-        401: ResponseSchema,
-        404: ResponseSchema,
+        200: SuccessResponseSchema(LoginResponseSchema),
+        400: ErrorResponseSchema,
+        401: ErrorResponseSchema,
+        404: ErrorResponseSchema,
       },
     },
     handler: authController.login,
@@ -51,10 +51,10 @@ async function authRoutes(app: FastifyInstance) {
       tags: ['Auth'],
       body: RefreshTokenRequestSchema,
       response: {
-        200: LoginResponseSchema,
-        400: ResponseSchema,
-        401: ResponseSchema,
-        404: ResponseSchema,
+        200: SuccessResponseSchema(RefreshTokenResSchema),
+        400: ErrorResponseSchema,
+        401: ErrorResponseSchema,
+        404: ErrorResponseSchema,
       },
     },
     preHandler: [app.verifyRefreshToken],
@@ -66,9 +66,9 @@ async function authRoutes(app: FastifyInstance) {
       tags: ['Auth'],
       querystring: VerifyEmailQuery,
       response: {
-        200: VerifyEmailResponseSchema,
-        400: ResponseSchema,
-        404: ResponseSchema,
+        200: SuccessResponseSchema(VerifyEmailResponseSchema),
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
       },
     },
     preHandler: [app.verifyEmailToken],
@@ -80,8 +80,9 @@ async function authRoutes(app: FastifyInstance) {
       tags: ['Auth'],
       body: ResendEmailRequestSchema,
       response: {
-        400: ResponseSchema,
-        404: ResponseSchema,
+        200: SuccessResWithoutDataSchema,
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
       },
     },
     handler: authController.resendVerifyEmail,
@@ -92,8 +93,9 @@ async function authRoutes(app: FastifyInstance) {
       tags: ['Auth'],
       body: ForgotPasswordRequestSchema,
       response: {
-        400: ResponseSchema,
-        404: ResponseSchema,
+        200: SuccessResWithoutDataSchema,
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
       },
     },
     handler: authController.forgotPassword,

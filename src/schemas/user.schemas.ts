@@ -13,12 +13,6 @@ const PasswordType = z
     message: 'Password must contain at least one lowercase letter, one uppercase letter, and one special character',
   });
 
-const UserQuerySchema = z.object({
-  searchText: z.string().optional(),
-  take: z.number().int().default(5),
-  skip: z.number().int().default(0),
-});
-
 const UserCore = {
   email: z
     .string({
@@ -27,6 +21,12 @@ const UserCore = {
     })
     .email(),
 };
+
+const UserQuerySchema = z.object({
+  searchText: z.string().optional(),
+  take: z.number().int().default(5),
+  skip: z.number().int().default(0),
+});
 
 export const ForgotPasswordRequestSchema = z.object({
   ...UserCore,
@@ -47,6 +47,11 @@ export const LoginResponseSchema = z.object({
   refreshToken: z.string(),
 });
 
+export const RefreshTokenResSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+});
+
 export const UserProfileResponseSchema = z.object({
   email: z.string().email().optional().nullish(),
   firstname: z.string().optional().nullish(),
@@ -56,6 +61,7 @@ export const UserProfileResponseSchema = z.object({
   address: z.string().optional().nullish(),
   createdAt: z.date().optional().nullish(),
   updatedAt: z.date().optional().nullish(),
+  avatarPath: z.string(),
 });
 
 export const CreateUserSchema = z.object({
@@ -66,37 +72,6 @@ export const CreateUserSchema = z.object({
 export const CreateUserResponseSchema = z.object({
   id: z.string().uuid(),
   ...UserCore,
-});
-
-export const UpdateUserSchema = z.object({
-  firstname: z
-    .string({
-      required_error: 'First name is required',
-      invalid_type_error: 'First name must be a string',
-    })
-    .min(3, { message: 'First name must be at least 3 characters' })
-    .max(50, { message: 'First name must be at most 50 characters' })
-    .optional(),
-
-  lastname: z
-    .string({
-      required_error: 'Last name is required',
-      invalid_type_error: 'Last name must be a string',
-    })
-    .min(3, { message: 'Last name at least three characters long' })
-    .max(50, { message: 'First name must be at most 50 characters' })
-    .optional(),
-
-  birthDay: z
-    .date()
-    .optional()
-    .refine((date) => !date || date <= new Date(), {
-      message: 'Date of birth cannot be in the future',
-    }),
-
-  gender: GenderOptionsEnum.optional(),
-  address: z.string().optional(),
-  isVerifiedEmail: z.boolean().optional(),
 });
 
 export const UpdateProfileSchema = z.object({
@@ -120,14 +95,15 @@ export const UpdateProfileSchema = z.object({
     .optional()
     .nullish(),
   birthDay: z
-    .date()
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Invalid date format (YYYY-MM-DD)' })
     .optional()
-    .refine((date) => !date || date <= new Date(), {
-      message: 'Date of birth cannot be in the future',
-    })
+    // .refine((date) => !date || date <= new Date(), {
+    //   message: 'Date of birth cannot be in the future',
+    // })
     .nullish(),
 
-  gender: GenderOptionsEnum.optional(),
+  gender: GenderOptionsEnum.optional().nullish(),
   address: z.string().optional().nullish(),
 });
 
@@ -142,6 +118,7 @@ export const ChangePasswordRequestSchema = z
   });
 
 export type LoginInput = z.infer<typeof LoginSchema>;
+export type LoginResType = z.infer<typeof LoginResponseSchema>;
 
 export type CreateUserInput = z.infer<typeof CreateUserSchema>;
 export type CreateUserResponse = z.infer<typeof CreateUserResponseSchema>;
@@ -151,7 +128,7 @@ export type UserQuery = z.infer<typeof UserQuerySchema>;
 export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordRequestSchema>;
 export type ChangePasswordRequest = z.infer<typeof ChangePasswordRequestSchema>;
 
-export type UpdateUser = z.infer<typeof UpdateUserSchema>;
+export type RefreshTokenResType = z.infer<typeof RefreshTokenResSchema>;
 
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileSchema>;
 export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;

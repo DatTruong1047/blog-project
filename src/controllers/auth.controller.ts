@@ -5,8 +5,15 @@ import { emailTokenOption, resetPasswordTokenOption } from '@app/config/email.co
 import { binding } from '@app/decorator/binding.decorator';
 import { EmailTokenPayload, ResendEmailRequest, VerifyEmailResponse } from '@app/schemas/email.schemas';
 import { RefreshToken, RefreshTokenRequest, TokenPayload } from '@app/schemas/jwt.schemas';
-import { Response } from '@app/schemas/response.schemas';
-import { CreateUserInput, CreateUserResponse, ForgotPasswordRequest, LoginInput } from '@app/schemas/user.schemas';
+import { ErrorResponseType, SuccessResponseType, SuccessResWithoutDataType } from '@app/schemas/response.schemas';
+import {
+  CreateUserInput,
+  CreateUserResponse,
+  ForgotPasswordRequest,
+  LoginInput,
+  LoginResType,
+  RefreshTokenResType,
+} from '@app/schemas/user.schemas';
 import AuthService from '@app/services/auth.service';
 import EmailService from '@app/services/mail.service';
 import UserService from '@app/services/user.service';
@@ -25,7 +32,7 @@ export default class AuthController {
 
       const existingUser = await this.userService.getUserByEmail(body.email);
       if (existingUser) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'User is already exist',
           code: config.ErrorCodes.USER_ALREADY_EXISTS,
         };
@@ -44,7 +51,7 @@ export default class AuthController {
 
       // Check sent email error
       if (!emailSent) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'Could not send verification email',
           code: config.ErrorCodes.SENT_EMAIL_FAIL,
         };
@@ -57,7 +64,12 @@ export default class AuthController {
         email: user.email,
       };
 
-      return reply.Created(response);
+      const res: SuccessResponseType<CreateUserResponse> = {
+        code: 201,
+        data: response,
+      };
+
+      return reply.Created(res);
     } catch (error) {
       return reply.InternalServer(error);
     }
@@ -67,13 +79,14 @@ export default class AuthController {
   async login(request: FastifyRequest<{ Body: LoginInput }>, reply: FastifyReply) {
     const body = request.body;
     const ipAddress = request.ip;
+
     try {
       // Check existing user
       const user = await this.userService.getUserByEmail(body.email);
       //console.log(user);
 
       if (!user) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'User not found',
           code: config.ErrorCodes.USER_NOT_FOUND,
         };
@@ -83,7 +96,7 @@ export default class AuthController {
 
       // Check verify email
       if (!user.isVerifiedEmail) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'Your account is available, but email is not verified',
           code: config.ErrorCodes.EMAIL_IS_NOT_VERIFIED,
         };
@@ -95,7 +108,7 @@ export default class AuthController {
       const isComparedPass = await this.authService.comparePassword(body.password, user.password);
 
       if (!isComparedPass) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'Password incorrect',
           code: config.ErrorCodes.INCORRECT_PASSWORD,
         };
@@ -105,18 +118,24 @@ export default class AuthController {
 
       // Create access and refresh token
       const payload: TokenPayload = { isAdmin: user.isAdmin, userId: user.id, userEmail: user.email };
-      const { accessToken, refreshToken } = this.authService.generateTokens(payload);
+      const loginRes: LoginResType = this.authService.generateTokens(payload);
 
       // Save refreshToken to db
       const refreshTokenData: RefreshToken = {
-        token: refreshToken,
+        token: loginRes.refreshToken,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         ipAddress,
         userId: user.id,
       };
+
       await this.authService.saveRefreshToken(refreshTokenData);
 
-      return reply.OK({ accessToken, refreshToken });
+      const res: SuccessResponseType<LoginResType> = {
+        code: 200,
+        data: loginRes,
+      };
+
+      return reply.OK(res);
     } catch (error) {
       return reply.InternalServer(error);
     }
@@ -126,12 +145,13 @@ export default class AuthController {
   async refreshToken(request: FastifyRequest<{ Body: RefreshTokenRequest }>, reply: FastifyReply) {
     try {
       const currentRefreshToken = request.body.refreshToken;
+      const ipAddress = request.ip;
 
       // Check is valid refresh token
       const storedRefreshToken = await this.authService.findToken(currentRefreshToken);
 
       if (!storedRefreshToken) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'Invalid refresh token',
           code: config.ErrorCodes.INVALID_REFRESH_TOKEN,
         };
@@ -139,7 +159,7 @@ export default class AuthController {
       }
 
       if (storedRefreshToken.expiresAt < new Date()) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'Refresh token expired',
           code: config.ErrorCodes.INVALID_REFRESH_TOKEN,
         };
@@ -156,10 +176,25 @@ export default class AuthController {
         userId: storedRefreshToken.users.id,
         userEmail: storedRefreshToken.users.email,
       };
-      const { accessToken, refreshToken } = this.authService.generateTokens(payload);
 
+      const tokens: RefreshTokenResType = this.authService.generateTokens(payload);
+
+      // Save refreshToken to db
+      const refreshTokenData: RefreshToken = {
+        token: tokens.refreshToken,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        ipAddress,
+        userId: storedRefreshToken.user_id,
+      };
+
+      await this.authService.saveRefreshToken(refreshTokenData);
+
+      const res: SuccessResponseType<RefreshTokenResType> = {
+        code: 200,
+        data: tokens,
+      };
       // Return
-      return reply.OK({ accessToken, refreshToken });
+      return reply.OK(res);
     } catch (error) {
       return reply.InternalServer(error);
     }
@@ -172,14 +207,14 @@ export default class AuthController {
       const result = await this.emailService.verifiedEmail(request);
 
       if (result.status === 400) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: result.message,
           code: config.ErrorCodes.INVALID_EMAIL_TOKEN,
         };
         return reply.BadRequest(errorResponse);
       }
       if (result.status === 404) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: result.message,
           code: config.ErrorCodes.USER_NOT_FOUND,
         };
@@ -190,7 +225,12 @@ export default class AuthController {
         message: result.message,
       };
 
-      return reply.Created(response);
+      const res: SuccessResponseType<VerifyEmailResponse> = {
+        code: 200,
+        data: response,
+      };
+
+      return reply.Created(res);
     } catch (error) {
       return reply.InternalServer(error);
     }
@@ -204,7 +244,7 @@ export default class AuthController {
       // Find user by email
       const user = await this.userService.getUserByEmail(email);
       if (!user) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'User not found',
           code: config.ErrorCodes.USER_NOT_FOUND,
         };
@@ -213,7 +253,7 @@ export default class AuthController {
 
       // email has already been verified
       if (user.isVerifiedEmail) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'Email has already been verified',
           code: config.ErrorCodes.EMAIL_HAS_BEEN_VERIFIED,
         };
@@ -228,13 +268,22 @@ export default class AuthController {
 
       // Check sent email error
       if (!emailSent) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'Could not send verification email',
           code: config.ErrorCodes.SENT_EMAIL_FAIL,
         };
         return reply.BadRequest(errorResponse);
       }
-    } catch (error) {}
+
+      const res: SuccessResWithoutDataType = {
+        code: 200,
+        status: 'success',
+      };
+
+      return reply.OK(res);
+    } catch (error) {
+      return reply.InternalServer(error);
+    }
   }
 
   @binding
@@ -244,7 +293,7 @@ export default class AuthController {
       // Find user by email
       const user = await this.userService.getUserByEmail(email);
       if (!user) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'User not found',
           code: config.ErrorCodes.USER_NOT_FOUND,
         };
@@ -260,13 +309,21 @@ export default class AuthController {
 
       // Check sent email error
       if (!emailSent) {
-        const errorResponse: Response = {
+        const errorResponse: ErrorResponseType = {
           message: 'Could not send email',
           code: config.ErrorCodes.SENT_EMAIL_FAIL,
         };
         return reply.BadRequest(errorResponse);
       }
-      return reply.OK({ message: 'Sent email' });
+
+      // Save forgot_token
+      await this.userService.saveForgotToken(user.id, resetPasswordToken);
+
+      const res: SuccessResWithoutDataType = {
+        code: 200,
+        status: 'Success',
+      };
+      return reply.OK(res);
     } catch (error) {
       return reply.InternalServer(error);
     }

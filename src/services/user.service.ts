@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-import { ChangePasswordRequest, CreateUserInput, UpdateProfileRequest, UserQuery } from '@app/schemas/user.schemas';
+import { CreateUserInput, UpdateProfileRequest, UserQuery } from '@app/schemas/user.schemas';
 
 import { hashPassword } from '../utils/hash.utils';
 
@@ -28,6 +28,12 @@ export default class UserService {
   async getUserByEmail(email: string) {
     return this._prisma.user.findUnique({
       where: { email },
+    });
+  }
+  async getUserProfileByEmail(email: string) {
+    return this._prisma.user.findUnique({
+      where: { email },
+      include: { media: true },
     });
   }
 
@@ -64,12 +70,30 @@ export default class UserService {
     });
   }
 
+  async updateUserAvatar(id: string, mediaId: string) {
+    return this._prisma.user.update({
+      where: { id },
+      data: {
+        mediaId,
+      },
+    });
+  }
+
   async updatePassword(id: string, password: string) {
     const { hashedPassword } = await hashPassword(password);
     return this._prisma.user.update({
       where: { id },
       data: {
         password: hashedPassword,
+      },
+    });
+  }
+
+  async saveForgotToken(id: string, token: string) {
+    return this._prisma.user.update({
+      where: { id },
+      data: {
+        forgotToken: token,
       },
     });
   }
