@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import { FastifyRequest, FastifyReply, FastifyPluginAsync, FastifyInstance } from 'fastify';
 import fastifuPlugin from 'fastify-plugin';
 
@@ -10,15 +9,6 @@ import { ErrorResponseType } from '@app/schemas/response.schemas';
 async function verifyToken(request: FastifyRequest, reply: FastifyReply) {
   try {
     const decoded: TokenPayload = await request.jwtVerify();
-
-    if (!decoded.userId) {
-      const errorResponse: ErrorResponseType = {
-        message: `Error`,
-        code: config.ErrorCodes.UNAUTHORIZED,
-      };
-
-      return reply.Unauthorized(errorResponse);
-    }
 
     request.decodeAccessToken = decoded;
   } catch (error) {

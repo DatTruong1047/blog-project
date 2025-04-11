@@ -1,5 +1,7 @@
 import z from 'zod';
 
+import { PostQueryBase } from './post.schemas';
+
 const CategoryCore = {
   name: z
     .string({
@@ -27,10 +29,6 @@ export const CategoryQuery = z.object({
     .pipe(z.number().int()),
 });
 
-export const CategoryParams = z.object({
-  id: z.string(),
-});
-
 export const CategoryResSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -42,19 +40,9 @@ export const UpSertCateSchema = z.object({
   ...CategoryCore,
 });
 
-// export const UpdateCateReqSchema = z.object({
-//   id: z.string({
-//     required_error: 'Id is required',
-//     invalid_type_error: 'Id must be a string',
-//   }),
-//   ...CategoryCore,
-// });
-
 export type UpSertCateType = z.infer<typeof UpSertCateSchema>;
-// export type UpdateCateReqType = z.infer<typeof UpdateCateReqSchema>;
 
 export type CategoryResponseType = z.infer<typeof CategoryResSchema>;
 export type CategoryArrType = z.infer<typeof CategoryArrSchema>;
 
-export type CategoryParamsType = z.infer<typeof CategoryParams>;
 export type CategoryQueryType = z.infer<typeof CategoryQuery>;

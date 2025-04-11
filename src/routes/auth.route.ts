@@ -15,12 +15,13 @@ import {
   LoginSchema,
   ForgotPasswordRequestSchema,
   RefreshTokenResSchema,
+  ResetPasswordSchema,
 } from '../schemas/user.schemas';
 
 async function authRoutes(app: FastifyInstance) {
   const authController = new AuthController(new UserService(), new Mailervice(), new AuthService());
 
-  app.post('/signUp', {
+  app.post('/sign-up', {
     schema: {
       tags: ['Auth'],
       body: CreateUserSchema,
@@ -32,7 +33,7 @@ async function authRoutes(app: FastifyInstance) {
     handler: authController.register,
   });
 
-  app.post('/signIn', {
+  app.post('/sign-in', {
     schema: {
       tags: ['Auth'],
       body: LoginSchema,
@@ -99,6 +100,19 @@ async function authRoutes(app: FastifyInstance) {
       },
     },
     handler: authController.forgotPassword,
+  });
+
+  app.post('/reset-password', {
+    schema: {
+      tags: ['Auth'],
+      body: ResetPasswordSchema,
+      response: {
+        200: SuccessResWithoutDataSchema,
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
+      },
+    },
+    handler: authController.resetPassword,
   });
 }
 

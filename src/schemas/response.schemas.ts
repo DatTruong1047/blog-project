@@ -19,7 +19,7 @@ export const SuccessResWithoutDataSchema = z.object({
   status: z.string().optional().nullish(),
 });
 
-export const SuccessResponseSchema = <T extends z.ZodTypeAny>(dataSchema?: T | z.ZodArray<T>) => {
+export const SuccessResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T | z.ZodArray<T>) => {
   return z.object({
     ...ResponseCore,
     status: z.string().optional().nullish(),
@@ -40,6 +40,14 @@ export const UpLoadFileSchema = z.object({
   ...UploadFileCore,
   code: z.number(),
   message: z.string(),
+});
+
+export const PaginationSchema = z.object({
+  totalPosts: z.number(),
+  totalPages: z.number(),
+  page: z.number(),
+  hasNextPage: z.boolean(),
+  hasPrevPage: z.boolean(),
 });
 
 // Type

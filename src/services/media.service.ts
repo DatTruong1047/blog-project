@@ -1,16 +1,6 @@
-import { createWriteStream, mkdir } from 'fs';
-import { extname, join } from 'path';
-import { pipeline } from 'stream/promises';
-import util from 'util';
-
-import { uploadFileConfig, ErrorCodes } from '@config';
 import { PrismaClient } from '@prisma/client';
-import { FastifyRequest } from 'fastify';
 
 import { CreateMediaType, UpdateMediaType } from '@app/schemas/media.schemas';
-import { UpLoadFileType } from '@app/schemas/response.schemas';
-
-const mkdirAsync = util.promisify(mkdir);
 
 export default class MediaService {
   private readonly _prisma: PrismaClient;
@@ -19,7 +9,13 @@ export default class MediaService {
     this._prisma = new PrismaClient();
   }
 
-  async index(id: string) {
+  async findByURL(url: string) {
+    return this._prisma.media.findUnique({
+      where: { url },
+    });
+  }
+
+  async show(id: string) {
     return this._prisma.media.findFirst({
       where: { id },
     });
@@ -74,67 +70,6 @@ export default class MediaService {
       }
     } catch (error) {
       throw error;
-    }
-  }
-
-  async uploadImage(request: FastifyRequest): Promise<UpLoadFileType> {
-    try {
-      // Check existing dir
-      await mkdirAsync(uploadFileConfig.uploadUserDir, { recursive: true });
-
-      const data = await request.file();
-
-      if (!data) {
-        return {
-          success: false,
-          code: ErrorCodes.FILE_NOT_FOUND,
-          message: 'File not found',
-        };
-      }
-
-      // Check file's size
-      // - truncated: mean file too big
-      if (data.file.truncated) {
-        return {
-          success: false,
-          code: ErrorCodes.FILE_SIZE_EXCEEDS,
-          message: `File size exceeds ${uploadFileConfig.limits.fileSize / (1024 * 1024)}MB`,
-        };
-      }
-
-      // Check file format
-      const fileExt = extname(data.filename).toLowerCase();
-
-      if (!uploadFileConfig.allowedExtensions.includes(fileExt)) {
-        return {
-          success: false,
-          code: ErrorCodes.FORMAT_IS_NOT_SUPPORTED,
-          message: `File format is not supported. Only accepted: ${uploadFileConfig.allowedExtensions.join(', ')}`,
-        };
-      }
-
-      // Create unique file's name
-      const uniqueFileName = `${Date.now()}_${data.fieldname}${fileExt}`;
-      const filePath = join(uploadFileConfig.uploadUserDir, uniqueFileName);
-
-      // Save file
-      const writeStream = createWriteStream(filePath);
-      await pipeline(data.file, writeStream);
-
-      return {
-        success: true,
-        code: 201,
-        message: 'Save success',
-        filePath: `/users/${uniqueFileName}`,
-      };
-    } catch (error) {
-      console.error('Upload error:', error);
-
-      return {
-        success: false,
-        code: ErrorCodes.UPLOAD_FILE_ERROR,
-        message: 'Upload file error',
-      };
     }
   }
 }

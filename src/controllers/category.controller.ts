@@ -1,22 +1,24 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 
-import { ErrorCodes } from '@app/config';
+import { ErrorCodes, PORT } from '@app/config';
 import { binding } from '@app/decorator/binding.decorator';
 import {
   CategoryArrType,
-  CategoryParamsType,
   CategoryQueryType,
   CategoryResponseType,
   UpSertCateType,
 } from '@app/schemas/category.schemas';
+import { PostCateQueryType, PostListResponseType, PostQueryType } from '@app/schemas/post.schemas';
+import { ReqParamsType } from '@app/schemas/request.schema';
 import { ErrorResponseType, SuccessResponseType, SuccessResWithoutDataType } from '@app/schemas/response.schemas';
 import CategoryService from '@app/services/category.service';
+import PostService from '@app/services/post.service';
 
 export default class CategoryController {
-  constructor(private readonly categoryService: CategoryService) {}
+  constructor(private readonly categoryService: CategoryService, private readonly postService: PostService) {}
 
   @binding
-  async show(request: FastifyRequest<{ Params: CategoryParamsType }>, reply: FastifyReply) {
+  async show(request: FastifyRequest<{ Params: ReqParamsType }>, reply: FastifyReply) {
     try {
       const cate: CategoryResponseType = await this.categoryService.show(request.params.id);
 
@@ -83,7 +85,7 @@ export default class CategoryController {
   }
 
   @binding
-  async edit(request: FastifyRequest<{ Params: CategoryParamsType; Body: UpSertCateType }>, reply: FastifyReply) {
+  async edit(request: FastifyRequest<{ Params: ReqParamsType; Body: UpSertCateType }>, reply: FastifyReply) {
     try {
       const existingCate = await this.categoryService.show(request.params.id);
 
@@ -120,13 +122,45 @@ export default class CategoryController {
   }
 
   @binding
-  async delete(request: FastifyRequest<{ Params: CategoryParamsType }>, reply: FastifyReply) {
+  async delete(request: FastifyRequest<{ Params: ReqParamsType }>, reply: FastifyReply) {
     try {
       await this.categoryService.delete(request.params.id);
 
       const res: SuccessResWithoutDataType = {
         code: 200,
         status: 'success',
+      };
+      return reply.OK(res);
+    } catch (error) {
+      return reply.InternalServer(error);
+    }
+  }
+
+  @binding
+  async getPostsByCateId(
+    request: FastifyRequest<{ Params: ReqParamsType; Querystring: PostCateQueryType }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const { id } = request.params;
+      const { searchTerm, authorId, sortBy, sortOrderBy, take, skip } = request.query;
+
+      const query: PostQueryType = {
+        // ...request.query,
+        searchTerm,
+        authorId,
+        sortBy,
+        sortOrderBy,
+        take,
+        skip,
+        categoryId: id,
+      };
+
+      const posts: PostListResponseType = await this.postService.getPosts(query);
+
+      const res: SuccessResponseType<PostListResponseType> = {
+        code: 200,
+        data: posts,
       };
       return reply.OK(res);
     } catch (error) {
