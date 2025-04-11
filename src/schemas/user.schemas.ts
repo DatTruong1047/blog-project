@@ -1,5 +1,7 @@
 import z from 'zod';
 
+import { MediaSchema } from './media.schemas';
+
 const GenderOptionsEnum = z.enum(['MALE', 'FEMALE', 'OTHER']);
 
 const PasswordType = z
@@ -117,6 +119,27 @@ export const ChangePasswordRequestSchema = z
     message: 'Passwords do not match',
   });
 
+export const ResetPasswordSchema = z
+  .object({
+    ...UserCore,
+    resetToken: z.string({
+      required_error: 'Reset token is required',
+    }),
+    password: PasswordType,
+    confirmPassword: PasswordType,
+  })
+  .refine((data) => !data.password || data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+  });
+
+export const UserSchema = z.object({
+  id: z.string(),
+  firstname: z.string(),
+  lastname: z.string(),
+  email: z.string().email(),
+  media: MediaSchema.nullable().optional(),
+});
+
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type LoginResType = z.infer<typeof LoginResponseSchema>;
 
@@ -132,3 +155,5 @@ export type RefreshTokenResType = z.infer<typeof RefreshTokenResSchema>;
 
 export type UpdateProfileRequest = z.infer<typeof UpdateProfileSchema>;
 export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;
+
+export type ResetPasswordType = z.infer<typeof ResetPasswordSchema>;

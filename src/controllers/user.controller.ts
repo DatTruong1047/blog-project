@@ -2,7 +2,10 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 
 import * as config from '@app/config';
 import { binding } from '@app/decorator/binding.decorator';
+import { FileType } from '@app/schemas/file.schemas';
 import { CreateMediaType } from '@app/schemas/media.schemas';
+import { MyPostQueryType, PostListResponseType, UpdatePostType } from '@app/schemas/post.schemas';
+import { ReqParamsType } from '@app/schemas/request.schema';
 import {
   ErrorResponseType,
   SuccessResponseType,
@@ -10,13 +13,20 @@ import {
   UpLoadFileResType,
 } from '@app/schemas/response.schemas';
 import { ChangePasswordRequest, UpdateProfileRequest, UserProfileResponse } from '@app/schemas/user.schemas';
+import CategoryService from '@app/services/category.service';
 import MediaService from '@app/services/media.service';
+import PostService from '@app/services/post.service';
 import UserService from '@app/services/user.service';
-import { deleteFile } from '@app/utils/file.utils';
+import { deleteFile, saveLocalFile } from '@app/utils/file.utils';
 import { comparePassword } from '@app/utils/hash.utils';
 
 export default class UserController {
-  constructor(private readonly userService: UserService, private readonly mediaService: MediaService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly mediaService: MediaService,
+    private readonly postService: PostService,
+    private readonly cateService: CategoryService
+  ) {}
 
   @binding
   async show(request: FastifyRequest, reply: FastifyReply) {
@@ -57,6 +67,49 @@ export default class UserController {
   }
 
   @binding
+  async showMyPost(request: FastifyRequest<{ Querystring: MyPostQueryType }>, reply: FastifyReply) {
+    try {
+      // ID in token
+      const userEmail = request.decodeAccessToken.userEmail;
+      const user = await this.userService.getUserProfileByEmail(userEmail);
+
+      const { categoryId } = request.query;
+
+      // Verify Cate
+      if (categoryId) {
+        const isExistingCate = await this.cateService.show(categoryId);
+
+        if (!isExistingCate) {
+          const errRes: ErrorResponseType = {
+            message: 'Category is not existing',
+            code: config.ErrorCodes.CATE_NOT_FOUND,
+          };
+
+          return reply.NotFound(errRes);
+        }
+      }
+
+      if (!user) {
+        const errorResponse: ErrorResponseType = {
+          code: config.ErrorCodes.USER_NOT_FOUND,
+          message: 'User not found',
+        };
+        return reply.NotFound(errorResponse);
+      }
+      const posts: PostListResponseType = await this.postService.getMyPosts(request.query, user.id);
+
+      const res: SuccessResponseType<PostListResponseType> = {
+        code: 200,
+        data: posts,
+      };
+
+      return reply.OK(res);
+    } catch (error) {
+      return reply.InternalServer(error);
+    }
+  }
+
+  @binding
   async edit(request: FastifyRequest<{ Body: UpdateProfileRequest }>, reply: FastifyReply) {
     try {
       // ID in token
@@ -77,6 +130,75 @@ export default class UserController {
       const res: SuccessResWithoutDataType = {
         code: 200,
         status: 'Success',
+      };
+
+      return reply.OK(res);
+    } catch (error) {
+      return reply.InternalServer(error);
+    }
+  }
+
+  @binding
+  async editPost(request: FastifyRequest<{ Params: ReqParamsType; Body: UpdatePostType }>, reply: FastifyReply) {
+    try {
+      const decoded = request.decodeAccessToken;
+      const postId = request.params.id;
+
+      const existingCate = await this.cateService.show(request.body.categoryId);
+      if (!existingCate) {
+        const errRes: ErrorResponseType = {
+          code: config.ErrorCodes.CATE_NOT_FOUND,
+          message: 'Cate not found',
+        };
+
+        return reply.BadRequest(errRes);
+      }
+
+      const result = await this.postService.update(request.body, postId, decoded.userId);
+
+      if (!result.success) {
+        const errRes: ErrorResponseType = {
+          code: result.code,
+          message: result.message,
+        };
+
+        if (result.code === config.ErrorCodes.POST_NOT_FOUND) {
+          return reply.NotFound(errRes);
+        } else {
+          return reply.BadRequest(errRes);
+        }
+      }
+
+      const res: SuccessResWithoutDataType = {
+        code: result.code,
+        status: 'success',
+      };
+
+      return reply.OK(res);
+    } catch (error) {
+      return reply.InternalServer(error);
+    }
+  }
+
+  @binding
+  async deletePost(request: FastifyRequest<{ Params: ReqParamsType }>, reply: FastifyReply) {
+    try {
+      const decoded = request.decodeAccessToken;
+      const postId = request.params.id;
+
+      const result = await this.postService.delete(postId, decoded.userId);
+
+      if (!result.success) {
+        const errRes: ErrorResponseType = {
+          code: result.code,
+          message: result.message,
+        };
+        return reply.BadRequest(errRes);
+      }
+
+      const res: SuccessResWithoutDataType = {
+        code: result.code,
+        status: 'success',
       };
 
       return reply.OK(res);
@@ -141,35 +263,16 @@ export default class UserController {
       }
 
       // Upload file
-      const result = await this.mediaService.uploadImage(request);
+      const file: FileType = request.uploadedFile;
 
-      if (!result.success) {
-        const errRes: ErrorResponseType = {
-          message: result.message,
-          code: result.code,
-        };
+      // Save file
+      const filePath = await saveLocalFile(file, config.uploadFileConfig.uploadUserDir, true, reply);
 
-        // Not found file
-        if (result.code === config.ErrorCodes.FILE_NOT_FOUND) {
-          return reply.NotFound(errRes);
-        }
-
-        // Errors: file size, file format, upload
-        if (
-          result.code === config.ErrorCodes.FILE_SIZE_EXCEEDS ||
-          result.code === config.ErrorCodes.FORMAT_IS_NOT_SUPPORTED ||
-          result.code === config.ErrorCodes.UPLOAD_FILE_ERROR
-        ) {
-          return reply.BadRequest(errRes);
-        }
-      }
-
-      // Process
-      await this.upSertUserAvatar(user, result.filePath);
+      await this.upSertUserAvatar(user, filePath);
 
       const uploadRes: UpLoadFileResType = {
-        success: result.success,
-        filePath: result.filePath,
+        success: true,
+        filePath: filePath,
       };
 
       const res: SuccessResponseType<UpLoadFileResType> = {
@@ -192,7 +295,7 @@ export default class UserController {
 
       // Existing user's avatar
       if (user.mediaId) {
-        const media = await this.mediaService.index(user.mediaId);
+        const media = await this.mediaService.show(user.mediaId);
 
         // Delete file in disk
         await deleteFile(media.url);

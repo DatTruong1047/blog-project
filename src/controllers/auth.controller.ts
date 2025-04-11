@@ -13,6 +13,7 @@ import {
   LoginInput,
   LoginResType,
   RefreshTokenResType,
+  ResetPasswordType,
 } from '@app/schemas/user.schemas';
 import AuthService from '@app/services/auth.service';
 import EmailService from '@app/services/mail.service';
@@ -248,6 +249,7 @@ export default class AuthController {
           message: 'User not found',
           code: config.ErrorCodes.USER_NOT_FOUND,
         };
+
         return reply.NotFound(errorResponse);
       }
 
@@ -257,8 +259,10 @@ export default class AuthController {
           message: 'Email has already been verified',
           code: config.ErrorCodes.EMAIL_HAS_BEEN_VERIFIED,
         };
+
         return reply.Conflict(errorResponse);
       }
+
       // Create verified email token
       const emailPayload: EmailTokenPayload = { userEmail: email };
       const verificationEmailToken = this.emailService.generateEmailToken(emailPayload, emailTokenOption);
@@ -324,6 +328,54 @@ export default class AuthController {
         status: 'Success',
       };
       return reply.OK(res);
+    } catch (error) {
+      return reply.InternalServer(error);
+    }
+  }
+
+  @binding
+  async resetPassword(request: FastifyRequest<{ Body: ResetPasswordType }>, reply: FastifyReply) {
+    try {
+      const { email, password, resetToken } = request.body;
+
+      const user = await this.userService.getUserByEmail(email);
+      if (!user) {
+        const errorResponse: ErrorResponseType = {
+          message: 'User not found',
+          code: config.ErrorCodes.USER_NOT_FOUND,
+        };
+
+        return reply.BadRequest(errorResponse);
+      }
+
+      try {
+        const decodeToken: EmailTokenPayload = request.server.jwt.verify(resetToken);
+
+        if (decodeToken.userEmail !== user.email) {
+          const errorResponse: ErrorResponseType = {
+            message: 'Invalid refresh token',
+            code: config.ErrorCodes.INVALID_REFRESH_TOKEN,
+          };
+
+          return reply.BadRequest(errorResponse);
+        }
+      } catch (error) {
+        const errorResponse: ErrorResponseType = {
+          message: 'Invalid refresh token',
+          code: config.ErrorCodes.INVALID_REFRESH_TOKEN,
+        };
+
+        return reply.BadRequest(errorResponse);
+      }
+
+      await this.userService.updatePassword(user.id, password);
+
+      const res: SuccessResWithoutDataType = {
+        code: 200,
+        status: 'success',
+      };
+
+      reply.OK(res);
     } catch (error) {
       return reply.InternalServer(error);
     }

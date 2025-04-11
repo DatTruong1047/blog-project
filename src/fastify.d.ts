@@ -10,6 +10,8 @@ import {
 import { CreateUserResponse } from './schemas/user.schemas';
 import { TokenPayload } from './schemas/jwt.schemas';
 import { EmailPayload } from './schemas/email.schemas';
+import { FileType } from './schemas/file.schemas';
+import { MultipartFile } from '@fastify/multipart';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -29,7 +31,7 @@ declare module 'fastify' {
     Forbidden(err: ErrorResponseType): FastifyReply;
     Conflict(err: ErrorResponseType): FastifyReply;
 
-    OK<T>(res: SuccessResponseType<T> | SuccessResWithoutDataType): FastifyReply;
+    OK<T>(res: T | SuccessResponseType<T> | SuccessResWithoutDataType): FastifyReply;
     Created<T>(res: SuccessResponseType<T> | SuccessResWithoutDataType): FastifyReply;
 
     InternalServer(err: Error): FastifyReply;
@@ -40,6 +42,6 @@ declare module 'fastify' {
   interface FastifyRequest {
     decodedEmailToken: EmailPayload;
     decodeAccessToken: TokenPayload;
-    userData;
+    uploadedFile?: FileType;
   }
 }

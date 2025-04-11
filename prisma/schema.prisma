@@ -4,8 +4,9 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-1.1.x"]
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+  // binaryTargets   = ["native", "debian-openssl-1.1.x"]
 }
 
 datasource db {
@@ -45,7 +46,7 @@ model Token {
 
 model Media {
   id          String      @id @default(uuid())
-  url         String
+  url         String      @unique
   description String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

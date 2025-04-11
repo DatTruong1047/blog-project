@@ -1,18 +1,20 @@
 import { FastifyInstance } from 'fastify';
 
 import CategoryController from '@app/controllers/category.controller';
+import { CategoryArrSchema, CategoryQuery, CategoryResSchema, UpSertCateSchema } from '@app/schemas/category.schemas';
+import { PostCateQuery } from '@app/schemas/post.schemas';
+import { ReqParams } from '@app/schemas/request.schema';
 import {
-  CategoryArrSchema,
-  CategoryParams,
-  CategoryQuery,
-  CategoryResSchema,
-  UpSertCateSchema,
-} from '@app/schemas/category.schemas';
-import { ErrorResponseSchema, SuccessResponseSchema, SuccessResWithoutDataSchema } from '@app/schemas/response.schemas';
+  ErrorResponseSchema,
+  PostListResponseSchema,
+  SuccessResponseSchema,
+  SuccessResWithoutDataSchema,
+} from '@app/schemas/response.schemas';
 import CategoryService from '@app/services/category.service';
+import PostService from '@app/services/post.service';
 
 export async function cateRoutesForAll(app: FastifyInstance) {
-  const categoryController = new CategoryController(new CategoryService());
+  const categoryController = new CategoryController(new CategoryService(), new PostService());
   app.get('/', {
     schema: {
       tags: ['Category'],
@@ -25,10 +27,24 @@ export async function cateRoutesForAll(app: FastifyInstance) {
     handler: categoryController.index,
   });
 
+  app.get('/:id/posts', {
+    schema: {
+      tags: ['Category'],
+      params: ReqParams,
+      querystring: PostCateQuery,
+      response: {
+        201: SuccessResponseSchema(PostListResponseSchema),
+        400: ErrorResponseSchema,
+        404: ErrorResponseSchema,
+      },
+    },
+    handler: categoryController.getPostsByCateId,
+  });
+
   app.get('/:id', {
     schema: {
       tags: ['Category'],
-      params: CategoryParams,
+      params: ReqParams,
       response: {
         200: SuccessResponseSchema(CategoryResSchema),
         404: ErrorResponseSchema,
@@ -39,7 +55,7 @@ export async function cateRoutesForAll(app: FastifyInstance) {
 }
 
 export async function cateRoutesForAdmin(app: FastifyInstance) {
-  const categoryController = new CategoryController(new CategoryService());
+  const categoryController = new CategoryController(new CategoryService(), new PostService());
 
   app.post('/', {
     schema: {
@@ -59,7 +75,7 @@ export async function cateRoutesForAdmin(app: FastifyInstance) {
   app.put('/:id', {
     schema: {
       tags: ['Category'],
-      params: CategoryParams,
+      params: ReqParams,
       body: UpSertCateSchema,
       response: {
         200: SuccessResWithoutDataSchema,
@@ -76,7 +92,7 @@ export async function cateRoutesForAdmin(app: FastifyInstance) {
   app.delete('/:id', {
     schema: {
       tags: ['Category'],
-      params: CategoryParams,
+      params: ReqParams,
       response: {
         200: SuccessResWithoutDataSchema,
         400: ErrorResponseSchema,

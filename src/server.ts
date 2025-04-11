@@ -53,6 +53,7 @@ const startServer = async () => {
     // Multipart
     app.register(fastifyMultipar, {
       limits: config.uploadFileConfig.limits,
+      attachFieldsToBody: false,
     });
 
     // Static file
